@@ -294,7 +294,7 @@
     return track_chunk
   end
 
-  function SetTrackChunk(track, track_chunk)
+  --[[function SetTrackChunk(track, track_chunk)
     if not (track and track_chunk) then return end
     local fast_str, ret
     fast_str = reaper.SNM_CreateFastString("")
@@ -302,6 +302,23 @@
       ret = reaper.SNM_GetSetObjectState(track, fast_str, true, false)
     end
     reaper.SNM_DeleteFastString(fast_str)
+    return ret
+  end]]
+  
+  function SetTrackChunk(track, track_chunk, usefix)
+    usefix = false --force as fix isn't needed 
+    if not (track and track_chunk) then return end
+    local ret
+    
+    if usefix == true then
+      local fast_str = reaper.SNM_CreateFastString("")
+      if reaper.SNM_SetFastString(fast_str, track_chunk) then
+        ret = reaper.SNM_GetSetObjectState(track, fast_str, true, false)
+      end
+      reaper.SNM_DeleteFastString(fast_str)
+    else
+      ret = reaper.SetTrackStateChunk(track,track_chunk,false)    
+    end
     return ret
   end
 
