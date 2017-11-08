@@ -15,7 +15,8 @@ Hope that makes sense.
 The Width and Height values should be the width/height of the screen (in pixels) or somewhere within that value if you wish to
 only use part of the screen.
 
-Once this is set up - you can test the settings using the SHOW/<</>> buttons 
+Once this is set up - you can test the settings using the SHOW/<</>> buttons.  The script acts on the currently selected track
+only at the moment. 
 
 SHOW: Opens the first plugins in the chain (as many as will fit on the designated area of the monitor).
 
@@ -24,7 +25,14 @@ SHOW: Opens the first plugins in the chain (as many as will fit on the designate
 
 HIDE:  Closes all FX windows.
 
+The Other Scripts - 
+-------------------
 
+Open - acts just like the Open button in the setup script.
+NextPage - acts just like the >> button in the setup script.
+PrevPage - acts just like the << button in the setup script.
+
+These scripts can be added as toolbar buttons to a Reaper toolbar :)
 
 Possible Issues - 
 -----------------
