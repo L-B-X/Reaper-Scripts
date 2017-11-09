@@ -395,15 +395,23 @@
   function PositionFXForTrack_Auto()
   
     local tr = reaper.GetSelectedTrack2(0,0,true)
-       
+    local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'   
     if not tr then return end
+    
     
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     local fxc = reaper.TrackFX_GetCount(tr)
      
     local chunk = GetTrackChunk(tr)
-    local partchunk = chunk
+    --DBG('match: '..tostring(string.match(chunk,mstr)))
+
+    cnt = 0
+    local _ = string.gsub(chunk,
+                          mstr,
+                          function(d) return Pass0(tr,d) end)
+
+    local chunk = GetTrackChunk(tr)
 
     xpos = monitor.x
     ypos = monitor.y
@@ -414,34 +422,53 @@
     pg = {}
     cnt = 0
     local pchunk = string.gsub(chunk,
-                              '(FLOAT.- %d+ %d+ %d+ %d+\n)',
+                              mstr,
                               function(d) return Pass1(d) end)
 
-    if pg[tpage] then
-      local sw = pg[tpage].maxw
-      local sh = pg[tpage].yp + pg[tpage].maxh
+    for p = 0, #pg do
+    --if pg[tpage] then
+      local sw = pg[p].maxw
+      local sh = pg[p].yp + pg[tpage].maxh
   
       xoff = math.max(math.floor((monitor.w-sw)/2),0)
-  
       yoff = math.max(math.floor((monitor.h-(sh))/2),0)
   
       page = 0
       cnt = 0
       
       chunk = string.gsub(chunk,
-                  '(FLOAT.- %d+ %d+ %d+ %d+\n)',
-                  function(d) return Repos(d) end)
+                  mstr,
+                  function(d) return Repos(d, p) end)
     
-      SetTrackChunk(tr, chunk)
+    end
+    SetTrackChunk(tr, chunk)
+    
+    OpenFX(tpage)
+  end
+
+  function Pass0(tr, t)
+
+    local d = {}
+    for i in t:gmatch("[%-?-%d%.]+") do 
+      d[#d+1] = tonumber(i)
+    end
+
+    --float plugin
+    if d[3] == 0 or d[4] == 0 then
+      --DBG('opening '..cnt..'  '..t)
+      reaper.TrackFX_Show(tr,cnt,3) 
+      reaper.TrackFX_Show(tr,cnt,2) 
     end
     
+    cnt = cnt + 1
+  
   end
   
   function Pass1(t)
 
     cnt = cnt + 1
     local d = {}
-    for i in t:gmatch("[%d%.]+") do 
+    for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
     
@@ -481,17 +508,19 @@
     
   end
 
-  function Repos(t)
+  function Repos(t, p)
   
     cnt=cnt+1
     local d = {}
-    for i in t:gmatch("[%d%.]+") do 
+    for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
   
-    if pos[cnt].page == tpage then
+    --DBG('t in : '..t)
+    if pos[cnt].page == p then
     
-      t = 'FLOAT '..string.format('%i',pos[cnt].x+xoff)..' '..string.format('%i',pos[cnt].y+yoff)..' '..pos[cnt].w..' '..pos[cnt].h..'\n'
+      t = 'FLOATPOS '..string.format('%i',pos[cnt].x+xoff)..' '..string.format('%i',pos[cnt].y+yoff)..' '..pos[cnt].w..' '..pos[cnt].h..'\n'
+    --DBG('t out: '..t)
     
     end
     
@@ -499,6 +528,27 @@
     
   end
   
+
+  function OpenFX(page)
+  
+    local tr = reaper.GetSelectedTrack2(0,0,true)       
+    if not tr then return end
+    --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
+    --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
+    if pos then
+      for p = 1, #pos do
+      
+        --DBG('pos '..p..' pg '..pos[p].page..' xywh '..pos[p].x..' '..pos[p].y..' '..pos[p].w..' '..pos[p].h)
+        if pos[p].page == page then
+          reaper.TrackFX_Show(tr,p-1,3)
+        else
+          reaper.TrackFX_Show(tr,p-1,2)
+        end
+        
+      end
+    end
+    
+  end
   
   ------------------------------------------------------------    
   
@@ -548,7 +598,8 @@
       elseif MOUSE_click(obj.sections[2]) then
       
         tpage = math.max(tpage - 1,0)
-        PositionFXForTrack_Auto()        
+        --PositionFXForTrack_Auto()   
+        OpenFX(tpage)     
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
         update_gfx = true
       
@@ -558,7 +609,7 @@
         if pg then pgcnt = #pg end
         
         tpage = math.min(tpage + 1,pgcnt)
-        PositionFXForTrack_Auto()        
+        OpenFX(tpage)        
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
         update_gfx = true
 

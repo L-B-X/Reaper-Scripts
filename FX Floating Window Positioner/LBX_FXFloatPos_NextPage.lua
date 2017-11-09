@@ -62,7 +62,7 @@
     local fxc = reaper.TrackFX_GetCount(tr)
      
     local chunk = GetTrackChunk(tr)
-    local partchunk = chunk
+    local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'
 
     xpos = monitor.x
     ypos = monitor.y
@@ -73,7 +73,7 @@
     pg = {}
     cnt = 0
     local pchunk = string.gsub(chunk,
-                              '(FLOAT.- %d+ %d+ %d+ %d+\n)',
+                              mstr,
                               function(d) return Pass1(d) end)
 
     if tpage > #pg then tpage = #pg end
@@ -90,7 +90,7 @@
       cnt = 0
       
       chunk = string.gsub(chunk,
-                  '(FLOAT.- %d+ %d+ %d+ %d+\n)',
+                  mstr,
                   function(d) return Repos(d) end)
     
       SetTrackChunk(tr, chunk)
@@ -102,7 +102,7 @@
 
     cnt = cnt + 1
     local d = {}
-    for i in t:gmatch("[%d%.]+") do 
+    for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
     
@@ -146,7 +146,7 @@
   
     cnt=cnt+1
     local d = {}
-    for i in t:gmatch("[%d%.]+") do 
+    for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
   
