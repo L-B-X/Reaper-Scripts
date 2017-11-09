@@ -3,7 +3,7 @@
 -- @changelog
 
 --[[
-   * ReaScript Name: SRD Smart Knobs
+   * ReaScript Name: LBX FX Float Positioner
    * Lua script for Cockos REAPER
    * Author: Leon Bradley (LBX)
    * Author URI: 
@@ -20,15 +20,8 @@
   --reaper.RecursiveCreateDirectory(resource_path,1)
   --reaper.RecursiveCreateDirectory(template_path,1)
       
-  local colours = {faderborder = '25 25 25',
-             fader = '55 55 55',
-             fader_inactive = '0 80 255',
-             faderbg = '35 35 35',
-             faderbg2 = '15 15 15',
-             mainbg = '35 35 35',
-             buttcol = '25 25 25',
-             faderlit = '87 109 130',
-             pnamelit = '107 129 150'}
+  local colours = {mainbg = '35 35 35',
+                   buttcol = '25 25 25'}
   
   local update_gfx = true
   local resize_display = true
@@ -241,7 +234,7 @@
     local l, t, r, b = 0, 0, w, h    
     local __, __, screen_w, screen_h = reaper.my_getViewport(l, t, r, b, l, t, r, b, 1)    
     local x, y = (screen_w - w) / 2, (screen_h - h) / 2    
-    gfx.init("SRD SMART CONTROL", w, h, 0, x, y)  
+    gfx.init("LBX FX POSITIONER", w, h, 0, x, y)  
   end
 
  -------------------------------------------------------------     
@@ -293,17 +286,6 @@
     reaper.SNM_DeleteFastString(fast_str)  
     return track_chunk
   end
-
-  --[[function SetTrackChunk(track, track_chunk)
-    if not (track and track_chunk) then return end
-    local fast_str, ret
-    fast_str = reaper.SNM_CreateFastString("")
-    if reaper.SNM_SetFastString(fast_str, track_chunk) then
-      ret = reaper.SNM_GetSetObjectState(track, fast_str, true, false)
-    end
-    reaper.SNM_DeleteFastString(fast_str)
-    return ret
-  end]]
   
   function SetTrackChunk(track, track_chunk, usefix)
     usefix = false --force as fix isn't needed 
@@ -320,69 +302,6 @@
       ret = reaper.SetTrackStateChunk(track,track_chunk,false)    
     end
     return ret
-  end
-
-  function GetPlugNameFromChunk(fxchunk)
-  
-    local fxn, fxt
-    local s,e = string.find(fxchunk,'.-(\n)')
-    local fxc = string.sub(fxchunk,1,e)
-    if string.sub(fxc,1,3) == 'VST' then
-      if string.match(fxc, '.-(VST3).-\n') then
-        fxt = 'VST3'
-      else
-        fxt = 'VST'
-      end
-      fxn = string.match(fxc, '.-: (.-) %(')
-      if fxn == nil then
-        fxn = string.match(fxc, '.-: (.-)%"')      
-      end
-    elseif string.sub(fxc,1,2) == 'JS' then
-      fxt = 'JS'
-      fxn = string.match(fxc, 'JS.*%/+(.-) \"')
-      if fxn == nil then
-        fxn = string.match(fxc, 'JS%s(.-)%s')  -- gets full path of effect
-        fxn = string.match(fxn, '([^/]+)$') -- gets filename  
-      end
-      --remove final " if exists
-      if string.sub(fxn,string.len(fxn)) == '"' then
-        fxn = string.sub(fxn,1,string.len(fxn)-1)
-      end
-      
-      --[[if fxn == nil then
-        --JS \"AB Level Matching JSFX [2.5]/AB_LMLT_cntrl\" \"MSTR /B\"\
-        fxn = string.match(fxchunk, 'JS.*%/(.-)%"%\"')
-        fxn = string.sub(fxn,1,string.len(fxn)-2)
-      end]]
-    end
-  
-    return fxn, fxt
-    
-  end
-  
-  --returns success, fxchunk, start loc, end loc
-  function GetFXChunkFromTrackChunk(track, fxn)
-  
-    --local ret, trchunk = reaper.GetTrackStateChunk(track,'')
-  local trchunk = GetTrackChunk(track)
-    if trchunk then
-      local s,e, fnd = 0,0,nil
-      for i = 1,fxn do
-        s, e = string.find(trchunk,'(BYPASS.-WAK %d)',s)
-        if s and e then
-          fxchunk = string.sub(trchunk,s,e)
-    
-          if i == fxn then fnd = true break end
-          s=e+1
-        else
-          fxchunk = nil
-          fnd = nil
-          break
-        end
-      end
-      return fnd, fxchunk, s, e  
-    end
-      
   end
     
   function nz(val, d)
@@ -404,14 +323,50 @@
     local fxc = reaper.TrackFX_GetCount(tr)
      
     local chunk = GetTrackChunk(tr)
-    --DBG('match: '..tostring(string.match(chunk,mstr)))
-
+    
+    local chs, che
+    chs, _ = string.find(chunk,'<FXCHAIN')
+    local level = 0
+    local cpos = chs 
+    repeat
+      local s,e = string.find(chunk,'[%<%>]',cpos)
+      if s then
+        local char = string.sub(chunk,s-1,s)
+        if char == '\n<' then
+          level = level + 1 
+        elseif char == '\n>' then  
+          level = level - 1 
+        end      
+      end
+      cpos = s+1 
+      if level == 0 then che = s break end
+    until level == 0    
+    local fchunk = string.sub(chunk,chs,che)
+    
     cnt = 0
-    local _ = string.gsub(chunk,
+    local _ = string.gsub(fchunk,
                           mstr,
                           function(d) return Pass0(tr,d) end)
 
     local chunk = GetTrackChunk(tr)
+    local chs, che
+    chs, _ = string.find(chunk,'<FXCHAIN')
+    local level = 0
+    local cpos = chs 
+    repeat
+      local s,e = string.find(chunk,'[%<%>]',cpos)
+      if s then
+        local char = string.sub(chunk,s-1,s)
+        if char == '\n<' then
+          level = level + 1 
+        elseif char == '\n>' then  
+          level = level - 1 
+        end      
+      end
+      cpos = s+1 
+      if level == 0 then che = s break end
+    until level == 0    
+    local fchunk = string.sub(chunk,chs,che)
 
     xpos = monitor.x
     ypos = monitor.y
@@ -421,27 +376,47 @@
     pos = {}
     pg = {}
     cnt = 0
-    local pchunk = string.gsub(chunk,
+    local pchunk = string.gsub(fchunk,
                               mstr,
                               function(d) return Pass1(d) end)
 
-    for p = 0, #pg do
-    --if pg[tpage] then
+    reaper.SetExtState(SCRIPT,'fx_posdata_cnt',#pos,false)
+    for pp = 1, #pos do
+    
+      local p = pos[pp].page
+      local sw = pg[p].maxw
+      local sh = pg[p].yp + pg[p].maxh
+  
+      local xoff = math.max(math.floor((monitor.w-sw)/2),0)
+      local yoff = math.max(math.floor((monitor.h-(sh))/2),0)
+      
+      pos[pp].x = pos[pp].x + xoff
+      pos[pp].y = pos[pp].y + yoff
+    
+      local posstr = pos[pp].page ..' '.. pos[pp].x ..' '.. pos[pp].y ..' '.. pos[pp].w ..' '.. pos[pp].h
+      reaper.SetExtState(SCRIPT,'fx_posdata_'..pp,posstr,false)
+    end
+    
+    --[[for p = 0, #pg do
+
       local sw = pg[p].maxw
       local sh = pg[p].yp + pg[tpage].maxh
   
       xoff = math.max(math.floor((monitor.w-sw)/2),0)
       yoff = math.max(math.floor((monitor.h-(sh))/2),0)
-  
-      page = 0
+  ]]
+      --page = 0
       cnt = 0
       
-      chunk = string.gsub(chunk,
+      fchunk = string.gsub(fchunk,
                   mstr,
                   function(d) return Repos(d, p) end)
     
-    end
-    SetTrackChunk(tr, chunk)
+    --end
+
+    local tchunk = string.sub(chunk,1,chs-1)..fchunk..string.sub(chunk,che+1)
+    --DBG(tchunk)
+    SetTrackChunk(tr, tchunk)
     
     OpenFX(tpage)
   end
@@ -507,38 +482,28 @@
     return t
     
   end
-
-  function Repos(t, p)
   
+  function Repos(t)
+    
     cnt=cnt+1
     local d = {}
     for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
-  
-    --DBG('t in : '..t)
-    if pos[cnt].page == p then
-    
-      t = 'FLOATPOS '..string.format('%i',pos[cnt].x+xoff)..' '..string.format('%i',pos[cnt].y+yoff)..' '..pos[cnt].w..' '..pos[cnt].h..'\n'
-    --DBG('t out: '..t)
-    
-    end
+        
+    t = 'FLOATPOS '..string.format('%i',pos[cnt].x)..' '..string.format('%i',pos[cnt].y)..' '..pos[cnt].w..' '..pos[cnt].h..'\n'
     
     return t
     
   end
-  
 
   function OpenFX(page)
   
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
-    --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
-    --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     if pos then
       for p = 1, #pos do
       
-        --DBG('pos '..p..' pg '..pos[p].page..' xywh '..pos[p].x..' '..pos[p].y..' '..pos[p].w..' '..pos[p].h)
         if pos[p].page == page then
           reaper.TrackFX_Show(tr,p-1,3)
         else
@@ -738,8 +703,6 @@
   
   ------------------------------------------------------------
   
-  --gfx1 = {main_w = 400, main_h = 450}  
-  --Lokasenna_Window_At_Center(gfx1.main_w,gfx1.main_h)
   LoadSettings()
   run()
   reaper.atexit(quit)
