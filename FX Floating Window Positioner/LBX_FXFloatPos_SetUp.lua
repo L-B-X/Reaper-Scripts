@@ -340,7 +340,10 @@
       end
       cpos = s+1 
       if level == 0 then che = s break end
-    until level == 0    
+    until level == 0 
+    
+    if chs == nil or che == nil then return end
+       
     local fchunk = string.sub(chunk,chs,che)
     
     cnt = 0
