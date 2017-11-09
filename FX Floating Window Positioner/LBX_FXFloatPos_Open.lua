@@ -12,6 +12,10 @@
     return val
   end
     
+  function DBG(str)
+   if str==nil then str="nil" end
+   reaper.ShowConsoleMsg(tostring(str).."\n")
+ end        
   ------------------------------------------------------------
   
   function nz(val, d)
@@ -60,10 +64,16 @@
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     local fxc = reaper.TrackFX_GetCount(tr)
+    local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'
      
     local chunk = GetTrackChunk(tr)
     
-    local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'
+    cnt = 0
+    local _ = string.gsub(chunk,
+                          mstr,
+                          function(d) return Pass0(tr,d) end)
+
+    local chunk = GetTrackChunk(tr)
 
     xpos = monitor.x
     ypos = monitor.y
@@ -97,6 +107,24 @@
     
   end
   
+  function Pass0(tr, t)
+  
+   local d = {}
+   for i in t:gmatch("[%-?%d%.]+") do 
+     d[#d+1] = tonumber(i)
+   end
+--DBG('p'..t)
+   --float plugin
+   if d[3] == 0 or d[4] == 0 then
+     --DBG('opening '..cnt..'  '..t)
+     reaper.TrackFX_Show(tr,cnt,3) 
+     reaper.TrackFX_Show(tr,cnt,2) 
+   end
+   
+   cnt = cnt + 1
+ 
+ end
+ 
   function Pass1(t)
 
     cnt = cnt + 1
