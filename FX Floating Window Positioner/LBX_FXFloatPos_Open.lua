@@ -95,7 +95,7 @@
       local _ = string.gsub(fchunk,
                             mstr,
                             function(d) return Pass0(tr,d) end)
-      CloseFX(openfx)
+      CloseFX(openfx,tr)
       openfx = nil
       
       local chunk = GetTrackChunk(tr)
@@ -160,7 +160,7 @@
       OpenFX(tpage)
     end
   
-    function CloseFX(cfx)
+    function CloseFX(cfx,tr)
       if #cfx > 0 then
         for i = 1, #cfx do
           reaper.TrackFX_Show(tr,cfx[i],2) 
