@@ -37,12 +37,5 @@ These scripts can be added as toolbar buttons to a Reaper toolbar :)
 Possible Issues - 
 -----------------
 
-Some plugins are slow to show up - using the chunk to change the position of the windows (the only way
-possible as far as I know) is not lightning quick.  Many plugins work fine like this - others such as Nebula may be slow or 
-very slow to show up.  This is mainly due to the plugins being re-initialized by Reaper whenever the chunk is written.
-
-Currently -  I don't know what will happen if you use many item FX.  Not tested - but have not added code to distinguish between
-chunk data for the FX Chain and Item FX.  I will probably add in the future.
-
-Some (very few) plugins reset themselves whenever the chunk is altered (Acon Digital plugins for example).  This script is
+Some (very few) plugins reset themselves whenever the chunk is altered (Acon Digital VST2 plugins for example - VST3 seem ok).  This script is
 incompatible with any plugins that act in this way.
