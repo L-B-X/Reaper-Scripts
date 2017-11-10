@@ -17,8 +17,6 @@
   local resource_path = reaper.GetResourcePath().."/Scripts/LBX/"
   local template_path = resource_path.."templates/"
   local dirtable = {'FIT','HORIZ','VERT','SINGLE'}
-  --reaper.RecursiveCreateDirectory(resource_path,1)
-  --reaper.RecursiveCreateDirectory(template_path,1)
       
   local colours = {mainbg = '35 35 35',
                    buttcol = '25 25 25'}
@@ -30,6 +28,10 @@
   local mouse = {}
 
   local nextupdate = 0
+  
+  local posoff = 0
+  local list_cnt = 0
+  local pos
   
   local dir = 0
   local tracknum
@@ -233,7 +235,7 @@
       GUI_text(gui, obj.sections[4], tpage+1 ..'/'..#pg+1, 5, tcol, -4)
     end
 
-    if pos then
+    if pos and #pos > 0 then
     
       local pages = pos[#pos].page
       local nw = math.max(math.floor(obj.sections[10].w / butt_h),1)-1
@@ -262,22 +264,39 @@
       obj.sections[11] = {x = 10,
                           y = obj.sections[10].y + butt_h * (nh+1) +10,
                           w = obj.sections[10].w,
-                          h = gfx1.main_h - ((butt_h * (nh+1)))}
+                          h = gfx1.main_h - (obj.sections[10].y+(butt_h * (nh+1)))}
       local txt_h = txt_h
-      for i = 1, #pos do
-        
-        local xywh = {x = obj.sections[11].x,
-                      y = obj.sections[11].y + (txt_h * (i-1)),
-                      w = obj.sections[11].w,
-                      h = txt_h}
-        local tcol = '200 200 200'
-        if pos[i].page == tpage then
-          tcol = '0 0 0'
-          f_Get_SSV('255 220 128') 
-          gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
+      local lpg = pos[posoff+1].page
+      list_cnt = math.floor(obj.sections[11].h / txt_h)-1
+      
+      for i = 1, list_cnt do
+        local ii = i + posoff
+        if pos[ii] then
+          local xywh = {x = obj.sections[11].x,
+                        y = obj.sections[11].y + (txt_h * (i-1)),
+                        w = obj.sections[11].w,
+                        h = txt_h}
+          local tcol = '200 200 200'
+          if pos[ii].page == tpage then
+            tcol = '0 0 0'
+            f_Get_SSV('255 220 128') 
+            gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
+          end
+          GUI_text(gui, xywh, pos[ii].fxname, 4, tcol, -4)
+          
+          if pos[ii].page ~= lpg then
+
+            local ys = obj.sections[11].y + math.floor((txt_h * (i-1))) --+ 0.5*txt_h)
+            local x = obj.sections[11].x-7
+            f_Get_SSV('32 32 32')
+            gfx.line(x,ys,x+obj.sections[11].w+14,ys)             
+            f_Get_SSV('100 100 100')
+            gfx.line(x,ys,x+4,ys)
+            
+            lpg = pos[ii].page
+            
+          end
         end
-        GUI_text(gui, xywh, pos[i].fxname, 4, tcol, -4)
-        
       end
     end
 
@@ -467,6 +486,7 @@
     xpos = monitor.x
     ypos = monitor.y
     maxh = 0
+    mmh = 0
     maxw = 0
     page = 0
     pos = {}
@@ -480,10 +500,11 @@
     
       local p = pos[pp].page
       local sw = pg[p].maxw
-      local sh = pg[p].yp + pg[p].maxh
+      local sh = pg[p].mmh --pg[p].yp + pg[p].maxh
+      --DBG(pg[p].maxh..'  '.. pg[p].mmh)
   
       local xoff = math.max(math.floor((monitor.w-sw)/2),0)
-      local yoff = math.max(math.floor((monitor.h-(sh))/2),0)
+      local yoff = math.max(math.floor((monitor.h/2)-(sh/2)),0)
       
       if dir == 0 then
         pos[pp].x = pos[pp].x + xoff
@@ -532,10 +553,8 @@
 
     --float plugin
     if d[3] == 0 or d[4] == 0 then
-      --DBG('opening '..cnt..'  '..t)
       openfx[#openfx+1] = cnt
       reaper.TrackFX_Show(tr,cnt,3) 
-      --reaper.TrackFX_Show(tr,cnt,2) 
     end
     
     cnt = cnt + 1
@@ -564,10 +583,13 @@
         xpos = monitor.x
         ypos = monitor.y
         maxw = 0
+        mmh = 0
         maxh = d[4]
       end
       
       maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+      mmh = math.max(mmh,ypos + maxh -monitor.y)
+
     elseif dir == 1 then
 
       maxh = math.max(maxh, d[4])
@@ -588,8 +610,10 @@
         xpos = monitor.x
         ypos = monitor.y
         maxh = 0
+        mmh = 0
         maxw = d[3]
       end
+      mmh = mmh + d[4]
       maxh = math.max(maxh,d[4]) 
 
     elseif dir == 3 then
@@ -620,8 +644,8 @@
       mw = pg[page].maxw
       mh = pg[page].maxh
     end
-
-    pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos}
+    
+    pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos, mmh = mmh}
     
     if dir == 0 then
       xpos = xpos + d[3]
@@ -732,7 +756,19 @@
     
     if mouse.context == nil then
     
-      if MOUSE_click(obj.sections[1]) then
+      if gfx.mouse_wheel ~= 0 then
+      
+        if MOUSE_over(obj.sections[11]) then
+          if pos then
+            local v = gfx.mouse_wheel/120
+
+            posoff = F_limit(posoff - v, 0, math.max(0,#pos-list_cnt))
+            update_gfx = true
+          end        
+        end
+        gfx.mouse_wheel = 0
+        
+      elseif MOUSE_click(obj.sections[1]) then
       
         tpage = 0
         PositionFXForTrack_Auto()
@@ -800,7 +836,7 @@
         
       elseif MOUSE_click(obj.sections[11]) then
       
-        local y = math.floor((mouse.my-obj.sections[11].y) / txt_h)+1
+        local y = math.floor((mouse.my-obj.sections[11].y) / txt_h)+1 + posoff
         if pos and pos[y] then
           tpage = pos[y].page
           OpenFX(tpage)

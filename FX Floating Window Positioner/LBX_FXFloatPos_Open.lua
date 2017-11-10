@@ -121,6 +121,7 @@
       xpos = monitor.x
       ypos = monitor.y
       maxh = 0
+      mmh = 0
       maxw = 0
       page = 0
       pos = {}
@@ -135,7 +136,7 @@
       
         local p = pos[pp].page
         local sw = pg[p].maxw
-        local sh = pg[p].yp + pg[p].maxh
+        local sh = pg[p].mmh --pg[p].yp + pg[p].maxh
     
         local xoff = math.max(math.floor((monitor.w-sw)/2),0)
         local yoff = math.max(math.floor((monitor.h-(sh))/2),0)
@@ -219,10 +220,13 @@
           xpos = monitor.x
           ypos = monitor.y
           maxw = 0
+          mmh = 0
           maxh = d[4]
         end
         
-        maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+        maxw = math.max(maxw,xpos + d[3] - monitor.x)
+        mmh = math.max(mmh,ypos + maxh -monitor.y)
+         
       elseif dir == 1 then
   
         maxh = math.max(maxh, d[4])
@@ -243,8 +247,10 @@
           xpos = monitor.x
           ypos = monitor.y
           maxh = 0
+          mmh = 0
           maxw = d[3]
         end
+        mmh = mmh + d[4]
         maxh = math.max(maxh,d[4]) 
   
       elseif dir == 3 then
@@ -268,7 +274,7 @@
         mh = pg[page].maxh
       end
   
-      pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos}
+      pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos, mmh = mmh}
       
       if dir == 0 then
         xpos = xpos + d[3]
