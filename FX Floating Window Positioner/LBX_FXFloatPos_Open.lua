@@ -91,10 +91,13 @@
       local fchunk = string.sub(chunk,chs,che)
       
       cnt = 0
+      openfx = {}
       local _ = string.gsub(fchunk,
                             mstr,
                             function(d) return Pass0(tr,d) end)
-  
+      CloseFX(openfx)
+      openfx = nil
+      
       local chunk = GetTrackChunk(tr)
       local chs, che
       chs, _ = string.find(chunk,'<FXCHAIN')
@@ -157,17 +160,26 @@
       OpenFX(tpage)
     end
   
+    function CloseFX(cfx)
+      if #cfx > 0 then
+        for i = 1, #cfx do
+          reaper.TrackFX_Show(tr,cfx[i],2) 
+        end
+      end
+    end
+  
     function Pass0(tr, t)
   
       local d = {}
-      for i in t:gmatch("[%-?-%d%.]+") do 
+      for i in t:gmatch("[%-?%d%.]+") do 
         d[#d+1] = tonumber(i)
       end
   
       --float plugin
       if d[3] == 0 or d[4] == 0 then
+        openfx[#openfx+1] = cnt
         reaper.TrackFX_Show(tr,cnt,3) 
-        reaper.TrackFX_Show(tr,cnt,2) 
+        --reaper.TrackFX_Show(tr,cnt,2) 
       end
       
       cnt = cnt + 1

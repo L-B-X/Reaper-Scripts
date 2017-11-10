@@ -347,10 +347,12 @@
     local fchunk = string.sub(chunk,chs,che)
     
     cnt = 0
+    openfx = {}
     local _ = string.gsub(fchunk,
                           mstr,
                           function(d) return Pass0(tr,d) end)
-
+    CloseFX(openfx, tr)
+    openfx = nil
     local chunk = GetTrackChunk(tr)
     local chs, che
     chs, _ = string.find(chunk,'<FXCHAIN')
@@ -382,7 +384,6 @@
     local pchunk = string.gsub(fchunk,
                               mstr,
                               function(d) return Pass1(d) end)
-
     reaper.SetExtState(SCRIPT,'fx_posdata_cnt',#pos,false)
     for pp = 1, #pos do
     
@@ -400,42 +401,39 @@
       reaper.SetExtState(SCRIPT,'fx_posdata_'..pp,posstr,false)
     end
     
-    --[[for p = 0, #pg do
-
-      local sw = pg[p].maxw
-      local sh = pg[p].yp + pg[tpage].maxh
-  
-      xoff = math.max(math.floor((monitor.w-sw)/2),0)
-      yoff = math.max(math.floor((monitor.h-(sh))/2),0)
-  ]]
-      --page = 0
-      cnt = 0
-      
-      fchunk = string.gsub(fchunk,
-                  mstr,
-                  function(d) return Repos(d, p) end)
+    cnt = 0
     
-    --end
-
+    fchunk = string.gsub(fchunk,
+                mstr,
+                function(d) return Repos(d, p) end)
+    
     local tchunk = string.sub(chunk,1,chs-1)..fchunk..string.sub(chunk,che+1)
-    --DBG(tchunk)
     SetTrackChunk(tr, tchunk)
     
     OpenFX(tpage)
   end
 
+  function CloseFX(cfx, tr)
+    if #cfx > 0 then
+      for i = 1, #cfx do
+        reaper.TrackFX_Show(tr,cfx[i],2) 
+      end
+    end
+  end
+  
   function Pass0(tr, t)
 
     local d = {}
-    for i in t:gmatch("[%-?-%d%.]+") do 
+    for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
 
     --float plugin
     if d[3] == 0 or d[4] == 0 then
       --DBG('opening '..cnt..'  '..t)
+      openfx[#openfx+1] = cnt
       reaper.TrackFX_Show(tr,cnt,3) 
-      reaper.TrackFX_Show(tr,cnt,2) 
+      --reaper.TrackFX_Show(tr,cnt,2) 
     end
     
     cnt = cnt + 1
