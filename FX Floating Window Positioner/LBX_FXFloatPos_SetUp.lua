@@ -760,11 +760,7 @@
         update_gfx = true
 
       elseif MOUSE_click(obj.sections[5]) then
-        tpage = -1
-        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-        reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
-        reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS3'),0)
-        update_gfx = true
+        HideFX()
         
       elseif MOUSE_click(obj.sections[6]) then
       
@@ -813,6 +809,9 @@
           update_gfx = true          
         end
       
+      elseif MOUSE_click_RB(obj.sections[11]) then
+        HideFX()
+      
       elseif MOUSE_click(obj.sections[10]) then
       
         if pos then
@@ -830,6 +829,9 @@
             update_gfx = true
           end 
         end
+
+      elseif MOUSE_click_RB(obj.sections[10]) then
+        HideFX()
       end
     
     end
@@ -859,6 +861,16 @@
         update_gfx = true
       end
       
+  end
+  
+  function HideFX()
+  
+    tpage = -1
+    reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+    reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
+    reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS3'),0)
+    update_gfx = true
+    
   end
   
   function SetUpMenu()
