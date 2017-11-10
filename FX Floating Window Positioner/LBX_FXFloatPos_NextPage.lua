@@ -71,5 +71,7 @@
   
   --PositionFXForTrack_Auto()
   tpage = OpenFX(tpage)
-  reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
-
+  reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+  
+  reaper.Main_OnCommand(reaper.NamedCommandLookup('_BR_FOCUS_ARRANGE_WND'),0)
+  

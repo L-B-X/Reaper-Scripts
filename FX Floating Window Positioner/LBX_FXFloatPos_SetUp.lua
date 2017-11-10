@@ -29,7 +29,8 @@
   local tpage = 0
   local mouse = {}
 
-
+  local nextupdate = 0
+  
   --------------------------------------------
   --------------------------------------------
         
@@ -92,7 +93,13 @@
     obj.sections[6] = {x = 10,
                        y = 10 + (butt_h+2)*4,
                        w = gfx1.main_w-20,
-                       h = butt_h}                               
+                       h = butt_h}       
+
+    obj.sections[10] = {x = 10,
+                       y = 20 + (butt_h+2)*5,
+                       w = gfx1.main_w-20,
+                       h = gfx1.main_h-(20 + (butt_h+2)*5)}       
+                                               
     return obj
   end
   
@@ -203,13 +210,41 @@
     local c = colours.buttcol
 
     c = '200 200 200'
-    GUI_DrawButton(gui, obj.sections[1], 'SHOW FX', c, '99 99 99', true, -1)
-    GUI_DrawButton(gui, obj.sections[2], '<<', c, '99 99 99', true, -1)
-    GUI_DrawButton(gui, obj.sections[3], '>>', c, '99 99 99', true, -1)
-    GUI_DrawButton(gui, obj.sections[5], 'HIDE FX', c, '99 99 99', true, -1)
-    GUI_DrawButton(gui, obj.sections[6], 'SET UP', c, '99 99 99', true, -1)
+    GUI_DrawButton(gui, obj.sections[1], 'SHOW', c, '99 99 99', true, -4)
+    GUI_DrawButton(gui, obj.sections[2], '<<', c, '99 99 99', true, -2)
+    GUI_DrawButton(gui, obj.sections[3], '>>', c, '99 99 99', true, -2)
+    GUI_DrawButton(gui, obj.sections[5], 'HIDE', c, '99 99 99', true, -4)
+    GUI_DrawButton(gui, obj.sections[6], 'SET UP', c, '99 99 99', true, -4)
     if pg and pg[tpage] then
-      GUI_text(gui, obj.sections[4], 'Page '..tpage+1 ..'/'..#pg+1, 5, tcol, tsz)
+      GUI_text(gui, obj.sections[4], tpage+1 ..'/'..#pg+1, 5, tcol, -4)
+    end
+
+    if pos then
+    
+      local pages = pos[#pos].page
+      local nw = math.max(math.floor(obj.sections[10].w / butt_h),1)-1
+      local dw = math.floor(obj.sections[10].w / (nw+1))
+      local nh = math.floor(pages / (nw+1))
+      
+      for y = 0, nh do
+        for x = 0, nw do
+          local p = y*(nw+1)+x
+          if p <= pages then
+            local xywh = {x = obj.sections[10].x + dw*x,
+                          y = obj.sections[10].y + butt_h*y,
+                          w = dw,
+                          h = butt_h-1}
+            local bc, tc = '255 220 128', '99 99 99'
+            if p ~= tpage then
+              bc = '0 0 0'
+              tc = '200 200 200'              
+            end
+            
+            GUI_DrawButton(gui, xywh, p+1, bc, tc, true, -1)
+          end
+        end
+      end
+    
     end
 
   end
@@ -517,6 +552,15 @@
   end
   
   ------------------------------------------------------------    
+  function UpdateTPage()
+  
+    local p = tonumber(GES('tpage',true))
+    if p and p ~= tpage then
+      tpage = p
+      update_gfx = true
+    end
+  
+  end
   
   function run()
   
@@ -552,13 +596,18 @@
     
     -------------------------------------------
     
+    if nextupdate < reaper.time_precise() then
+      UpdateTPage()
+      nextupdate = reaper.time_precise() + 0.3
+    end
+    
     if mouse.context == nil then
     
       if MOUSE_click(obj.sections[1]) then
       
         tpage = 0
         PositionFXForTrack_Auto()
-        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
       
       elseif MOUSE_click(obj.sections[2]) then
@@ -566,7 +615,7 @@
         tpage = math.max(tpage - 1,0)
         --PositionFXForTrack_Auto()   
         OpenFX(tpage)     
-        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
       
       elseif MOUSE_click(obj.sections[3]) then
@@ -576,7 +625,7 @@
         
         tpage = math.min(tpage + 1,pgcnt)
         OpenFX(tpage)        
-        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
 
       elseif MOUSE_click(obj.sections[5]) then
@@ -586,6 +635,24 @@
       elseif MOUSE_click(obj.sections[6]) then
       
         SetUp()
+        
+      elseif MOUSE_click(obj.sections[10]) then
+      
+        if pos then
+          local pages = pos[#pos].page
+          local nw = math.max(math.floor(obj.sections[10].w / butt_h),1)-1
+          local dw = math.floor(obj.sections[10].w / (nw+1))
+          local x = math.floor((mouse.mx-obj.sections[10].x) / dw)
+          local y = math.floor((mouse.my-obj.sections[10].y) / butt_h)
+          local p = x + y*(nw+1)
+      
+          if p <= pages then
+            tpage = p
+            OpenFX(tpage)        
+            reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+            update_gfx = true
+          end 
+        end
       end
     
     end

@@ -91,12 +91,12 @@
       local fchunk = string.sub(chunk,chs,che)
       
       cnt = 0
-      openfx = {}
+      --openfx = {}
       local _ = string.gsub(fchunk,
                             mstr,
                             function(d) return Pass0(tr,d) end)
-      CloseFX(openfx,tr)
-      openfx = nil
+      --CloseFX(openfx,tr)
+      --openfx = nil
       
       local chunk = GetTrackChunk(tr)
       local chs, che
@@ -177,9 +177,9 @@
   
       --float plugin
       if d[3] == 0 or d[4] == 0 then
-        openfx[#openfx+1] = cnt
+        --openfx[#openfx+1] = cnt
         reaper.TrackFX_Show(tr,cnt,3) 
-        --reaper.TrackFX_Show(tr,cnt,2) 
+        reaper.TrackFX_Show(tr,cnt,2) 
       end
       
       cnt = cnt + 1
@@ -271,5 +271,6 @@
   tpage = 0
   
   PositionFXForTrack_Auto()
-  reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),true)
+  reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+  reaper.Main_OnCommand(reaper.NamedCommandLookup('_BR_FOCUS_ARRANGE_WND'),0)
     
