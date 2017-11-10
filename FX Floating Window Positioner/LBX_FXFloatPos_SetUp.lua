@@ -266,6 +266,9 @@
                           w = obj.sections[10].w,
                           h = gfx1.main_h - (obj.sections[10].y+(butt_h * (nh+1)))}
       local txt_h = txt_h
+      if not pos[posoff+1] then
+        posoff = 0
+      end
       local lpg = pos[posoff+1].page
       list_cnt = math.floor(obj.sections[11].h / txt_h)-1
       
@@ -313,6 +316,10 @@
     
   end
   
+  function trim1(s)
+    return (s:gsub("^%s*(.-)%s*$", "%1"))
+  end
+  
   function CropFXName(n)
   
     if n == nil then
@@ -321,15 +328,15 @@
       local fxn = string.match(n, ': (.+)%(')
       if fxn then
       --DBG('a'..fxn)
-        return fxn
+        return trim1(fxn)
       else
         fxn = string.match(n, '.+/(.*)')
         if fxn and fxn ~= '' then
       --DBG('b'..string.len(fxn))
-          return fxn
+          return trim1(fxn)
         else
       --DBG('c')
-          return n
+          return trim1(n)
         end
       end
     end
@@ -697,6 +704,7 @@
     local p = tonumber(GES('tpage',true))
     if p and p ~= tpage then
       tpage = p
+      posoff = 0
       update_gfx = true
     end
   
