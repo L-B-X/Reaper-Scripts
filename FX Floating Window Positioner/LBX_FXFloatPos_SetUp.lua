@@ -720,7 +720,7 @@
         if tn ~= tracknum then
           tracknum = tn
           
-          tpage = 0
+          tpage = -1
           PositionFXForTrack_Auto()
           reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
           update_gfx = true
