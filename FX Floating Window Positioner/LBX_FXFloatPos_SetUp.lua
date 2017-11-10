@@ -32,6 +32,9 @@
   local nextupdate = 0
   
   local dir = 0
+  local tracknum
+  local settings = {}
+  settings.followtrack = false
   
   --------------------------------------------
   --------------------------------------------
@@ -48,8 +51,6 @@
   
   end
   
-  
-  
   function DBG(str)
     if str==nil then str="nil" end
     reaper.ShowConsoleMsg(tostring(str).."\n")
@@ -65,6 +66,7 @@
     local pw =  math.floor(gfx1.main_w/2)-10
 
     butt_h = 26
+    txt_h = 16
         
     --butt1
     obj.sections[1] = {x = 10,
@@ -104,7 +106,11 @@
     obj.sections[10] = {x = 10,
                        y = 20 + (butt_h+2)*6,
                        w = gfx1.main_w-20,
-                       h = gfx1.main_h-(20 + (butt_h+2)*5)}       
+                       h = gfx1.main_h-(20 + (butt_h+2)*5)}
+    obj.sections[11] = {x = 0,
+                         y = 0,
+                         w = 0,
+                         h = 0}         
                                                
     return obj
   end
@@ -253,6 +259,26 @@
         end
       end
     
+      obj.sections[11] = {x = 10,
+                          y = obj.sections[10].y + butt_h * (nh+1) +10,
+                          w = obj.sections[10].w,
+                          h = gfx1.main_h - ((butt_h * (nh+1)))}
+      local txt_h = txt_h
+      for i = 1, #pos do
+        
+        local xywh = {x = obj.sections[11].x,
+                      y = obj.sections[11].y + (txt_h * (i-1)),
+                      w = obj.sections[11].w,
+                      h = txt_h}
+        local tcol = '200 200 200'
+        if pos[i].page == tpage then
+          tcol = '0 0 0'
+          f_Get_SSV('255 220 128') 
+          gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
+        end
+        GUI_text(gui, xywh, pos[i].fxname, 4, tcol, -4)
+        
+      end
     end
 
   end
@@ -268,7 +294,29 @@
     
   end
   
- 
+  function CropFXName(n)
+  
+    if n == nil then
+      return ""
+    else
+      local fxn = string.match(n, ': (.+)%(')
+      if fxn then
+      --DBG('a'..fxn)
+        return fxn
+      else
+        fxn = string.match(n, '.+/(.*)')
+        if fxn and fxn ~= '' then
+      --DBG('b'..string.len(fxn))
+          return fxn
+        else
+      --DBG('c')
+          return n
+        end
+      end
+    end
+    
+  end
+   
   ------------------------------------------------------------
   
   function Lokasenna_Window_At_Center (w, h)
@@ -426,7 +474,7 @@
     cnt = 0
     local pchunk = string.gsub(fchunk,
                               mstr,
-                              function(d) return Pass1(d) end)
+                              function(d) return Pass1(tr, d) end)
     reaper.SetExtState(SCRIPT,'fx_posdata_cnt',#pos,false)
     for pp = 1, #pos do
     
@@ -464,7 +512,7 @@
     local tchunk = string.sub(chunk,1,chs-1)..fchunk..string.sub(chunk,che+1)
     SetTrackChunk(tr, tchunk)
     
-    OpenFX(tpage)
+    --OpenFX(tpage)
   end
 
   function CloseFX(cfx, tr)
@@ -494,7 +542,7 @@
   
   end
   
-  function Pass1(t)
+  function Pass1(tr, t)
 
     cnt = cnt + 1
     local d = {}
@@ -555,7 +603,15 @@
       
     end
 
-    pos[cnt] = {page = page,
+    local _, fxnm = reaper.TrackFX_GetFXName(tr,cnt-1,'')
+    if fxnm then
+      fxnm = CropFXName(fxnm)
+    else
+      fxnm = '[unknown fx]'
+    end
+
+    pos[cnt] = {fxname = fxnm,
+                page = page,
                  x = xpos, y = ypos,
                  w = d[3], h = d[4]}
 
@@ -658,6 +714,19 @@
     
     if nextupdate < reaper.time_precise() then
       UpdateTPage()
+      
+      if settings.followtrack == true then
+        local tn = reaper.GetSelectedTrack2(0,0,true)
+        if tn ~= tracknum then
+          tracknum = tn
+          
+          tpage = 0
+          PositionFXForTrack_Auto()
+          reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+          update_gfx = true
+          
+        end
+      end
       nextupdate = reaper.time_precise() + 0.3
     end
     
@@ -667,6 +736,8 @@
       
         tpage = 0
         PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
       
@@ -689,12 +760,19 @@
         update_gfx = true
 
       elseif MOUSE_click(obj.sections[5]) then
+        tpage = -1
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
         reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS3'),0)
-
+        update_gfx = true
+        
       elseif MOUSE_click(obj.sections[6]) then
       
         SetUp()
+
+      elseif MOUSE_click_RB(obj.sections[6]) then
+
+        SetUpMenu()
 
       elseif MOUSE_click(obj.sections[7]) then
         
@@ -705,6 +783,8 @@
         reaper.SetExtState(SCRIPT,'dir',dir,true)
         tpage = 0
         PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)        
         update_gfx = true
 
@@ -717,9 +797,22 @@
         reaper.SetExtState(SCRIPT,'dir',dir,true)
         tpage = 0
         PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
         
+      elseif MOUSE_click(obj.sections[11]) then
+      
+        local y = math.floor((mouse.my-obj.sections[11].y) / txt_h)+1
+        if pos and pos[y] then
+          tpage = pos[y].page
+          OpenFX(tpage)
+          
+          reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+          update_gfx = true          
+        end
+      
       elseif MOUSE_click(obj.sections[10]) then
       
         if pos then
@@ -766,6 +859,26 @@
         update_gfx = true
       end
       
+  end
+  
+  function SetUpMenu()
+  
+    local txt = ''
+    if settings.followtrack == true then
+      txt = '!'
+    end
+    txt = txt .. 'Follow Selected Track'
+    
+    local mstr = txt
+    gfx.x,gfx.y = mouse.mx,mouse.my
+  
+    local res = gfx.showmenu(mstr)
+    if res > 0 then
+      if res == 1 then
+        settings.followtrack = not settings.followtrack 
+      end
+    end
+  
   end
   
   function SetUp()
@@ -824,6 +937,7 @@
       reaper.SetExtState(SCRIPT,'mon_w',nz(monitor.w,1920),true) 
       reaper.SetExtState(SCRIPT,'mon_h',nz(monitor.h,1080),true)       
       reaper.SetExtState(SCRIPT,'dir',dir,true)       
+      reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
     end
   
   end
@@ -853,7 +967,21 @@
                w = nz(tonumber(mw),1920),
                h = nz(tonumber(mh),1080)}
     dir = nz(tonumber(GES('dir',true)),0)
+    settings.followtrack = tobool(GES('settings_followtrack',true))
 
+  end
+  
+  function tobool(v)
+  
+    if v then
+      if string.lower(v) == 'true' then
+        return true
+      else
+        return false
+      end
+    else
+      return false
+    end
   end
   
   ------------------------------------------------------------
