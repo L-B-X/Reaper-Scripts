@@ -140,8 +140,19 @@
         local xoff = math.max(math.floor((monitor.w-sw)/2),0)
         local yoff = math.max(math.floor((monitor.h-(sh))/2),0)
         
-        pos[pp].x = pos[pp].x + xoff
-        pos[pp].y = pos[pp].y + yoff
+        if dir == 0 then
+          pos[pp].x = pos[pp].x + xoff
+          pos[pp].y = pos[pp].y + yoff
+        elseif dir == 1 then
+          pos[pp].x = pos[pp].x + xoff
+          pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
+        elseif dir == 2 then
+          pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
+          pos[pp].y = pos[pp].y + yoff
+        elseif dir == 3 then
+          pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
+          pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
+        end
       
         local posstr = pos[pp].page ..' '.. pos[pp].x ..' '.. pos[pp].y ..' '.. pos[pp].w ..' '.. pos[pp].h
         reaper.SetExtState(SCRIPT,'fx_posdata_'..pp,posstr,false)
@@ -194,23 +205,58 @@
         d[#d+1] = tonumber(i)
       end
       
-      if xpos + d[3] > monitor.x + monitor.w then
-        xpos = monitor.x
-        ypos = ypos + maxh
-        maxh = 0
-      end
+      if dir == 0 then
+        if xpos + d[3] > monitor.x + monitor.w then
+          xpos = monitor.x
+          ypos = ypos + maxh
+          maxh = 0
+        end
+    
+        maxh = math.max(maxh, d[4])
+    
+        if ypos + maxh > monitor.y + monitor.h then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxw = 0
+          maxh = d[4]
+        end
+        
+        maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+      elseif dir == 1 then
   
-      maxh = math.max(maxh, d[4])
+        maxh = math.max(maxh, d[4])
+        if xpos + d[3] > monitor.x + monitor.w then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxw = 0
+          maxh = d[4]
+        end
+        maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+      
+      elseif dir == 2 then
+      
+        maxw = math.max(maxw, d[3])
+        if ypos + d[4] > monitor.y + monitor.h then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxh = 0
+          maxw = d[3]
+        end
+        maxh = math.max(maxh,d[4]) 
   
-      if ypos + maxh > monitor.y + monitor.h then
-        page = page + 1
+      elseif dir == 3 then
+        
+        page = cnt-1
+        maxw = math.max(maxw, d[3])
         xpos = monitor.x
         ypos = monitor.y
-        maxw = 0
-        maxh = d[4]
+        maxw = d[3]
+        maxh = math.max(maxh,d[4]) 
+        
       end
-      
-      maxw = math.max(maxw,xpos + d[3] - monitor.x) 
   
       pos[cnt] = {page = page,
                    x = xpos, y = ypos,
@@ -224,7 +270,13 @@
   
       pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos}
       
-      xpos = xpos + d[3]
+      if dir == 0 then
+        xpos = xpos + d[3]
+      elseif dir == 1 then
+        xpos = xpos + d[3]
+      elseif dir == 2 then
+        ypos = ypos + d[4]
+      end
       
       return t
       
@@ -269,6 +321,7 @@
              w = nz(tonumber(mw),1920),
              h = nz(tonumber(mh),1080)}
   tpage = 0
+  dir = tonumber(GES('dir',true)) or 0
   
   PositionFXForTrack_Auto()
   reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)

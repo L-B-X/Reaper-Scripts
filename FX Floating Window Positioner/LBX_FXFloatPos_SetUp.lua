@@ -16,7 +16,7 @@
   
   local resource_path = reaper.GetResourcePath().."/Scripts/LBX/"
   local template_path = resource_path.."templates/"
-  
+  local dirtable = {'FIT','HORIZ','VERT','SINGLE'}
   --reaper.RecursiveCreateDirectory(resource_path,1)
   --reaper.RecursiveCreateDirectory(template_path,1)
       
@@ -30,6 +30,8 @@
   local mouse = {}
 
   local nextupdate = 0
+  
+  local dir = 0
   
   --------------------------------------------
   --------------------------------------------
@@ -66,37 +68,41 @@
         
     --butt1
     obj.sections[1] = {x = 10,
-                       y = 10,
+                       y = 10 + (butt_h+2)*2,
                        w = gfx1.main_w-20,
                        h = butt_h}
 
     obj.sections[2] = {x = 10,
-                       y = 10 + (butt_h+2),
+                       y = 10 + (butt_h+2)*3,
                        w = gfx1.main_w/2-11,
                        h = butt_h}
 
     obj.sections[3] = {x = gfx1.main_w/2+1,
-                       y = 10 + (butt_h+2),
+                       y = 10 + (butt_h+2)*3,
                        w = gfx1.main_w/2-11,
                        h = butt_h}
 
     obj.sections[4] = {x = 10,
-                       y = 10 + (butt_h+2)*2,
+                       y = 10 + (butt_h+2)*4,
                        w = gfx1.main_w-20,
                        h = butt_h}                               
 
     obj.sections[5] = {x = 10,
-                       y = 10 + (butt_h+2)*3,
+                       y = 10 + (butt_h+2)*5,
                        w = gfx1.main_w-20,
                        h = butt_h}                               
 
     obj.sections[6] = {x = 10,
-                       y = 10 + (butt_h+2)*4,
+                       y = 10 + (butt_h+2)*0,
+                       w = gfx1.main_w-20,
+                       h = butt_h}       
+    obj.sections[7] = {x = 10,
+                       y = 10 + (butt_h+2)*1,
                        w = gfx1.main_w-20,
                        h = butt_h}       
 
     obj.sections[10] = {x = 10,
-                       y = 20 + (butt_h+2)*5,
+                       y = 20 + (butt_h+2)*6,
                        w = gfx1.main_w-20,
                        h = gfx1.main_h-(20 + (butt_h+2)*5)}       
                                                
@@ -215,6 +221,8 @@
     GUI_DrawButton(gui, obj.sections[3], '>>', c, '99 99 99', true, -2)
     GUI_DrawButton(gui, obj.sections[5], 'HIDE', c, '99 99 99', true, -4)
     GUI_DrawButton(gui, obj.sections[6], 'SET UP', c, '99 99 99', true, -4)
+    
+    GUI_DrawButton(gui, obj.sections[7], dirtable[dir+1], c, '99 99 99', true, -4)
     if pg and pg[tpage] then
       GUI_text(gui, obj.sections[4], tpage+1 ..'/'..#pg+1, 5, tcol, -4)
     end
@@ -429,9 +437,20 @@
       local xoff = math.max(math.floor((monitor.w-sw)/2),0)
       local yoff = math.max(math.floor((monitor.h-(sh))/2),0)
       
-      pos[pp].x = pos[pp].x + xoff
-      pos[pp].y = pos[pp].y + yoff
-    
+      if dir == 0 then
+        pos[pp].x = pos[pp].x + xoff
+        pos[pp].y = pos[pp].y + yoff
+      elseif dir == 1 then
+        pos[pp].x = pos[pp].x + xoff
+        pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
+      elseif dir == 2 then
+        pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
+        pos[pp].y = pos[pp].y + yoff
+      elseif dir == 3 then
+        pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
+        pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
+      end
+          
       local posstr = pos[pp].page ..' '.. pos[pp].x ..' '.. pos[pp].y ..' '.. pos[pp].w ..' '.. pos[pp].h
       reaper.SetExtState(SCRIPT,'fx_posdata_'..pp,posstr,false)
     end
@@ -483,23 +502,58 @@
       d[#d+1] = tonumber(i)
     end
     
-    if xpos + d[3] > monitor.x + monitor.w then
-      xpos = monitor.x
-      ypos = ypos + maxh
-      maxh = 0
-    end
+    if dir == 0 then
+      if xpos + d[3] > monitor.x + monitor.w then
+        xpos = monitor.x
+        ypos = ypos + maxh
+        maxh = 0
+      end
+  
+      maxh = math.max(maxh, d[4])
+  
+      if ypos + maxh > monitor.y + monitor.h then
+        page = page + 1
+        xpos = monitor.x
+        ypos = monitor.y
+        maxw = 0
+        maxh = d[4]
+      end
+      
+      maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+    elseif dir == 1 then
 
-    maxh = math.max(maxh, d[4])
+      maxh = math.max(maxh, d[4])
+      if xpos + d[3] > monitor.x + monitor.w then
+        page = page + 1
+        xpos = monitor.x
+        ypos = monitor.y
+        maxw = 0
+        maxh = d[4]
+      end
+      maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+    
+    elseif dir == 2 then
+    
+      maxw = math.max(maxw, d[3])
+      if ypos + d[4] > monitor.y + monitor.h then
+        page = page + 1
+        xpos = monitor.x
+        ypos = monitor.y
+        maxh = 0
+        maxw = d[3]
+      end
+      maxh = math.max(maxh,d[4]) 
 
-    if ypos + maxh > monitor.y + monitor.h then
-      page = page + 1
+    elseif dir == 3 then
+      
+      page = cnt-1
+      maxw = math.max(maxw, d[3])
       xpos = monitor.x
       ypos = monitor.y
-      maxw = 0
-      maxh = d[4]
+      maxw = d[3]
+      maxh = math.max(maxh,d[4]) 
+      
     end
-    
-    maxw = math.max(maxw,xpos + d[3] - monitor.x) 
 
     pos[cnt] = {page = page,
                  x = xpos, y = ypos,
@@ -513,7 +567,13 @@
 
     pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos}
     
-    xpos = xpos + d[3]
+    if dir == 0 then
+      xpos = xpos + d[3]
+    elseif dir == 1 then
+      xpos = xpos + d[3]
+    elseif dir == 2 then
+      ypos = ypos + d[4]
+    end
     
     return t
     
@@ -635,6 +695,30 @@
       elseif MOUSE_click(obj.sections[6]) then
       
         SetUp()
+
+      elseif MOUSE_click(obj.sections[7]) then
+        
+        dir = dir + 1
+        if dir > #dirtable-1 then
+          dir = 0
+        end
+        reaper.SetExtState(SCRIPT,'dir',dir,true)
+        tpage = 0
+        PositionFXForTrack_Auto()
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)        
+        update_gfx = true
+
+      elseif MOUSE_click_RB(obj.sections[7]) then
+        
+        dir = dir - 1
+        if dir < 0 then
+          dir = #dirtable-1
+        end
+        reaper.SetExtState(SCRIPT,'dir',dir,true)
+        tpage = 0
+        PositionFXForTrack_Auto()
+        reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+        update_gfx = true
         
       elseif MOUSE_click(obj.sections[10]) then
       
@@ -739,6 +823,7 @@
       reaper.SetExtState(SCRIPT,'mon_y',nz(monitor.y,0),true) 
       reaper.SetExtState(SCRIPT,'mon_w',nz(monitor.w,1920),true) 
       reaper.SetExtState(SCRIPT,'mon_h',nz(monitor.h,1080),true)       
+      reaper.SetExtState(SCRIPT,'dir',dir,true)       
     end
   
   end
@@ -767,6 +852,8 @@
                y = nz(tonumber(my),0),
                w = nz(tonumber(mw),1920),
                h = nz(tonumber(mh),1080)}
+    dir = nz(tonumber(GES('dir',true)),0)
+
   end
   
   ------------------------------------------------------------
