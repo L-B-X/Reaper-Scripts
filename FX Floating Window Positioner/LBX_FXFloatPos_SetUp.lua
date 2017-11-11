@@ -9,6 +9,8 @@
    * Author URI: 
    * Licence: GPL v3
   ]]
+   
+   
       
   local monitor = {x = 0, y = 0, w = 1920, h = 1080}
   
@@ -335,15 +337,12 @@
     else
       local fxn = string.match(n, ': (.+)%(')
       if fxn then
-      --DBG('a'..fxn)
         return trim1(fxn)
       else
         fxn = string.match(n, '.+/(.*)')
         if fxn and fxn ~= '' then
-      --DBG('b'..string.len(fxn))
           return trim1(fxn)
         else
-      --DBG('c')
           return trim1(n)
         end
       end
@@ -437,6 +436,8 @@
   end
   
   function PositionFXForTrack_Auto()
+  
+    reaper.Undo_BeginBlock2(0)
   
     local tr = reaper.GetSelectedTrack2(0,0,true)
     local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'   
@@ -548,6 +549,7 @@
     local tchunk = string.sub(chunk,1,chs-1)..fchunk..string.sub(chunk,che+1)
     SetTrackChunk(tr, tchunk)
     
+    reaper.Undo_EndBlock2(0, 'Show Plugins', 0)
     --OpenFX(tpage)
   end
 
@@ -702,6 +704,8 @@
 
   function OpenFX(page)
   
+    reaper.Undo_BeginBlock2(0)
+    
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
     if pos then
@@ -715,6 +719,8 @@
         
       end
     end
+    
+    reaper.Undo_EndBlock2(0, 'Show Plugins', 0)
     
   end
   
