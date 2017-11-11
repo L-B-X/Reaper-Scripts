@@ -14,7 +14,7 @@
   
   local SCRIPT='LBX_FXPOS'
   
-  local resource_path = reaper.GetResourcePath().."/Scripts/LBX/"
+  local resource_path = reaper.GetResourcePath().."/Scripts/LBX/FXPositionerData/"
   local template_path = resource_path.."templates/"
   local dirtable = {'FIT','HORIZ','VERT','SINGLE'}
       
@@ -32,6 +32,7 @@
   local posoff = 0
   local list_cnt = 0
   local pos
+  local fxblacklist = {}
   
   local dir = 0
   local tracknum
@@ -282,8 +283,15 @@
           local tcol = '200 200 200'
           if pos[ii].page == tpage then
             tcol = '0 0 0'
-            f_Get_SSV('255 220 128') 
+            local bcol = '255 220 128'
+            if fxblacklist[pos[ii].fxname] then
+              bcol = '196 156 64'
+            end
+            f_Get_SSV(bcol) 
             gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
+          end
+          if fxblacklist[pos[ii].fxname] then
+            tcol = '80 80 80'
           end
           GUI_text(gui, xywh, pos[ii].fxname, 4, tcol, -4)
           
@@ -499,6 +507,7 @@
     pos = {}
     pg = {}
     cnt = 0
+    ubl = false
     local pchunk = string.gsub(fchunk,
                               mstr,
                               function(d) return Pass1(tr, d) end)
@@ -508,7 +517,6 @@
       local p = pos[pp].page
       local sw = pg[p].maxw
       local sh = pg[p].mmh --pg[p].yp + pg[p].maxh
-      --DBG(pg[p].maxh..'  '.. pg[p].mmh)
   
       local xoff = math.max(math.floor((monitor.w-sw)/2),0)
       local yoff = math.max(math.floor((monitor.h/2)-(sh/2)),0)
@@ -575,64 +583,6 @@
     for i in t:gmatch("[%-?%d%.]+") do 
       d[#d+1] = tonumber(i)
     end
-    
-    if dir == 0 then
-      if xpos + d[3] > monitor.x + monitor.w then
-        xpos = monitor.x
-        ypos = ypos + maxh
-        maxh = 0
-      end
-  
-      maxh = math.max(maxh, d[4])
-  
-      if ypos + maxh > monitor.y + monitor.h then
-        page = page + 1
-        xpos = monitor.x
-        ypos = monitor.y
-        maxw = 0
-        mmh = 0
-        maxh = d[4]
-      end
-      
-      maxw = math.max(maxw,xpos + d[3] - monitor.x) 
-      mmh = math.max(mmh,ypos + maxh -monitor.y)
-
-    elseif dir == 1 then
-
-      maxh = math.max(maxh, d[4])
-      if xpos + d[3] > monitor.x + monitor.w then
-        page = page + 1
-        xpos = monitor.x
-        ypos = monitor.y
-        maxw = 0
-        maxh = d[4]
-      end
-      maxw = math.max(maxw,xpos + d[3] - monitor.x) 
-    
-    elseif dir == 2 then
-    
-      maxw = math.max(maxw, d[3])
-      if ypos + d[4] > monitor.y + monitor.h then
-        page = page + 1
-        xpos = monitor.x
-        ypos = monitor.y
-        maxh = 0
-        mmh = 0
-        maxw = d[3]
-      end
-      mmh = mmh + d[4]
-      maxh = math.max(maxh,d[4]) 
-
-    elseif dir == 3 then
-      
-      page = cnt-1
-      maxw = math.max(maxw, d[3])
-      xpos = monitor.x
-      ypos = monitor.y
-      maxw = d[3]
-      maxh = math.max(maxh,d[4]) 
-      
-    end
 
     local _, fxnm = reaper.TrackFX_GetFXName(tr,cnt-1,'')
     if fxnm then
@@ -640,11 +590,79 @@
     else
       fxnm = '[unknown fx]'
     end
+    local blacklist = false
+    if fxblacklist[fxnm] == true then
+      blacklist = true
+    end
+    
+    if blacklist == false then
+      if dir == 0 then
+        if xpos + d[3] > monitor.x + monitor.w then
+          xpos = monitor.x
+          ypos = ypos + maxh
+          maxh = 0
+        end
+    
+        maxh = math.max(maxh, d[4])
+    
+        if ypos + maxh > monitor.y + monitor.h then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxw = 0
+          mmh = 0
+          maxh = d[4]
+        end
+        
+        maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+        mmh = math.max(mmh,ypos + maxh -monitor.y)
+  
+      elseif dir == 1 then
+  
+        maxh = math.max(maxh, d[4])
+        if xpos + d[3] > monitor.x + monitor.w then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxw = 0
+          maxh = d[4]
+        end
+        maxw = math.max(maxw,xpos + d[3] - monitor.x) 
+      
+      elseif dir == 2 then
+      
+        maxw = math.max(maxw, d[3])
+        if ypos + d[4] > monitor.y + monitor.h then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxh = 0
+          mmh = 0
+          maxw = d[3]
+        end
+        mmh = mmh + d[4]
+        maxh = math.max(maxh,d[4]) 
+  
+      elseif dir == 3 then
+        maxw = math.max(maxw, d[3])
+        xpos = monitor.x
+        ypos = monitor.y
+        maxw = d[3]
+        maxh = math.max(maxh,d[4])
+        
+        if ubl == true then
+          page = page + 1
+        end
+        ubl = true  
+      end
 
+    end
+    
     pos[cnt] = {fxname = fxnm,
                 page = page,
                  x = xpos, y = ypos,
-                 w = d[3], h = d[4]}
+                 w = d[3], h = d[4],
+                 blacklist = blacklist}
 
     local mw, mh = 0,0
     if pg[page] then
@@ -654,14 +672,16 @@
     
     pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos, mmh = mmh}
     
-    if dir == 0 then
-      xpos = xpos + d[3]
-    elseif dir == 1 then
-      xpos = xpos + d[3]
-    elseif dir == 2 then
-      ypos = ypos + d[4]
+    if blacklist == false then
+      if dir == 0 then
+        xpos = xpos + d[3]
+      elseif dir == 1 then
+        xpos = xpos + d[3]
+      elseif dir == 2 then
+        ypos = ypos + d[4]
+      end
     end
-    
+        
     return t
     
   end
@@ -687,7 +707,7 @@
     if pos then
       for p = 1, #pos do
       
-        if pos[p].page == page then
+        if pos[p].page == page and pos[p].blacklist ~= true then
           reaper.TrackFX_Show(tr,p-1,3)
         else
           reaper.TrackFX_Show(tr,p-1,2)
@@ -846,11 +866,21 @@
       
         local y = math.floor((mouse.my-obj.sections[11].y) / txt_h)+1 + posoff
         if pos and pos[y] then
-          tpage = pos[y].page
-          OpenFX(tpage)
-          
-          reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-          update_gfx = true          
+        
+          if mouse.ctrl ~= true then
+            tpage = pos[y].page
+            OpenFX(tpage)
+            
+            reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+            update_gfx = true
+          else
+            if fxblacklist[pos[y].fxname] == true then
+              fxblacklist[pos[y].fxname] = nil
+            else
+              fxblacklist[pos[y].fxname] = true
+            end
+            update_gfx = true
+          end
         end
       
       elseif MOUSE_click_RB(obj.sections[11]) then
@@ -996,6 +1026,7 @@
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
     end
   
+    SaveBlacklist()
   end
   
   function LoadSettings()
@@ -1025,6 +1056,38 @@
     dir = nz(tonumber(GES('dir',true)),0)
     settings.followtrack = tobool(GES('settings_followtrack',true))
 
+    LoadBlacklist()
+
+  end
+  
+  function SaveBlacklist()
+  
+    local fxblacklist = fxblacklist
+    local fn = resource_path..'fxblacklist.txt'
+    file = io.open(fn,'wb')
+    if file then
+      for k in pairs(fxblacklist) do
+        file:write(k..'\n')
+      end
+      file:close()
+    end
+    
+  end
+  
+  function LoadBlacklist()
+  
+    local fxblacklist = fxblacklist
+    local fn = resource_path..'fxblacklist.txt'
+    if reaper.file_exists(fn) == true then
+      lines = {}
+      for line in io.lines(fn) do
+        local key = line --string.match(line,'(.-)\n')
+        if key then
+          fxblacklist[key] = true
+        end
+      end
+    end
+  
   end
   
   function tobool(v)
@@ -1041,6 +1104,7 @@
   end
   
   ------------------------------------------------------------
+  reaper.RecursiveCreateDirectory(resource_path,1)
   
   LoadSettings()
   run()
