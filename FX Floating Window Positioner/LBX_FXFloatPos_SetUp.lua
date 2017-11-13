@@ -357,12 +357,12 @@
       if fxn then
         return trim1(fxn)
       else
-        fxn = string.match(n, '.+/(.*)')
-        if fxn and fxn ~= '' then
-          return trim1(fxn)
-        else
+        --fxn = string.match(n, '.+/(.*)')
+        --if fxn and fxn ~= '' then
+        --  return trim1(fxn)
+        --else
           return trim1(n)
-        end
+        --end
       end
     end
     
