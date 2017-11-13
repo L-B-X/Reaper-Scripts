@@ -18,7 +18,9 @@
   
   local resource_path = reaper.GetResourcePath().."/Scripts/LBX/FXPositionerData/"
   local template_path = resource_path.."templates/"
-  local dirtable = {'FIT','HORIZ','VERT','SINGLE'}
+  local dirtable = {'FIT','HORIZ','VERT','SINGLE','COLUMNS'}
+  local aligntable1 = {'LEFT','CENTRE','RIGHT'}
+  local aligntable2 = {'TOP','CENTRE','BOTTOM'}
       
   local colours = {mainbg = '35 35 35',
                    buttcol = '25 25 25'}
@@ -37,6 +39,7 @@
   local fxblacklist = {}
   
   local dir = 0
+  local align = 0
   local tracknum
   local settings = {}
   settings.followtrack = false
@@ -75,27 +78,27 @@
         
     --butt1
     obj.sections[1] = {x = 10,
-                       y = 10 + (butt_h+2)*2,
+                       y = 10 + (butt_h+2)*3,
                        w = gfx1.main_w-20,
                        h = butt_h}
 
     obj.sections[2] = {x = 10,
-                       y = 10 + (butt_h+2)*3,
+                       y = 10 + (butt_h+2)*4,
                        w = gfx1.main_w/2-11,
                        h = butt_h}
 
     obj.sections[3] = {x = gfx1.main_w/2+1,
-                       y = 10 + (butt_h+2)*3,
+                       y = 10 + (butt_h+2)*4,
                        w = gfx1.main_w/2-11,
                        h = butt_h}
 
     obj.sections[4] = {x = 10,
-                       y = 10 + (butt_h+2)*4,
+                       y = 10 + (butt_h+2)*5,
                        w = gfx1.main_w-20,
                        h = butt_h}                               
 
     obj.sections[5] = {x = 10,
-                       y = 10 + (butt_h+2)*5,
+                       y = 10 + (butt_h+2)*6,
                        w = gfx1.main_w-20,
                        h = butt_h}                               
 
@@ -107,9 +110,13 @@
                        y = 10 + (butt_h+2)*1,
                        w = gfx1.main_w-20,
                        h = butt_h}       
+    obj.sections[8] = {x = 10,
+                       y = 10 + (butt_h+2)*2,
+                       w = gfx1.main_w-20,
+                       h = butt_h}       
 
     obj.sections[10] = {x = 10,
-                       y = 20 + (butt_h+2)*6,
+                       y = 20 + (butt_h+2)*7,
                        w = gfx1.main_w-20,
                        h = gfx1.main_h-(20 + (butt_h+2)*5)}
     obj.sections[11] = {x = 0,
@@ -234,6 +241,17 @@
     GUI_DrawButton(gui, obj.sections[6], 'SET UP', c, '99 99 99', true, -4)
     
     GUI_DrawButton(gui, obj.sections[7], dirtable[dir+1], c, '99 99 99', true, -4)
+
+    local alt = ''
+    if dir == 0 or dir == 1 then
+      alt = aligntable2[align+1]
+    elseif dir ~= 3 then
+      alt = aligntable1[align+1]
+    else
+      alt = aligntable1[2]
+    end
+        
+    GUI_DrawButton(gui, obj.sections[8], alt, c, '99 99 99', true, -4)
     if pg and pg[tpage] then
       GUI_text(gui, obj.sections[4], tpage+1 ..'/'..#pg+1, 5, tcol, -4)
     end
@@ -443,7 +461,6 @@
     local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'   
     if not tr then return end
     
-    
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     local fxc = reaper.TrackFX_GetCount(tr)
@@ -503,10 +520,13 @@
     ypos = monitor.y
     maxh = 0
     mmh = 0
+    mmw = 0
     maxw = 0
     page = 0
     pos = {}
     pg = {}
+    rc_p = 0
+    rc_sz = {}
     cnt = 0
     ubl = false
     local pchunk = string.gsub(fchunk,
@@ -523,14 +543,59 @@
       local yoff = math.max(math.floor((monitor.h/2)-(sh/2)),0)
       
       if dir == 0 then
+
+        if rc_sz[pos[pp].rc] then
+          if align == 1 then
+            yoff = yoff + math.floor((rc_sz[pos[pp].rc]-pos[pp].h)/2)
+          elseif align == 2 then
+            yoff = yoff + math.floor((rc_sz[pos[pp].rc]-pos[pp].h))        
+          end
+        end
         pos[pp].x = pos[pp].x + xoff
         pos[pp].y = pos[pp].y + yoff
+        
+      elseif dir == 4 then
+      
+        sw = pg[p].mmw
+        sh = pg[p].maxh
+        
+        yoff = math.max(math.floor((monitor.h-sh)/2),0)
+        xoff = math.max(math.floor((monitor.w/2)-(sw/2)),0)
+        
+        if rc_sz[pos[pp].rc] then
+          if align == 1 then
+            xoff = xoff + math.floor((rc_sz[pos[pp].rc]-pos[pp].w)/2)
+          elseif align == 2 then
+            xoff = xoff + math.floor((rc_sz[pos[pp].rc]-pos[pp].w))        
+          end
+        end
+        
+        pos[pp].x = pos[pp].x + xoff
+        pos[pp].y = pos[pp].y + yoff
+      
       elseif dir == 1 then
+      
         pos[pp].x = pos[pp].x + xoff
-        pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
+        if align == 0 then
+          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2))
+        elseif align == 1 then
+          yoff = math.floor(((monitor.h)/2) - (pos[pp].h/2))
+        elseif align == 2 then
+          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)
+        end
+        pos[pp].y = monitor.y + yoff
+        
       elseif dir == 2 then
-        pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
+        if align == 0 then
+          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2))
+        elseif align == 1 then
+          xoff = math.floor(((monitor.w)/2) - (pos[pp].w/2))
+        elseif align == 2 then
+          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
+        end
+        pos[pp].x = monitor.x + xoff
         pos[pp].y = pos[pp].y + yoff
+        
       elseif dir == 3 then
         pos[pp].x = monitor.x + math.floor(((monitor.w)/2) - (pos[pp].w/2))
         pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
@@ -603,6 +668,7 @@
           xpos = monitor.x
           ypos = ypos + maxh
           maxh = 0
+          rc_p = rc_p + 1
         end
     
         maxh = math.max(maxh, d[4])
@@ -612,12 +678,38 @@
           xpos = monitor.x
           ypos = monitor.y
           maxw = 0
-          mmh = 0
+          mmw = 0
           maxh = d[4]
+          rc_p = rc_p + 1
         end
         
+        rc_sz[rc_p] = math.max(rc_sz[rc_p] or 0,d[4])
         maxw = math.max(maxw,xpos + d[3] - monitor.x) 
         mmh = math.max(mmh,ypos + maxh -monitor.y)
+
+      elseif dir == 4 then
+        if ypos + d[4] > monitor.y + monitor.h then
+          ypos = monitor.y
+          xpos = xpos + maxw
+          maxw = 0
+          rc_p = rc_p + 1
+        end
+    
+        maxw = math.max(maxw, d[3])
+    
+        if xpos + maxw > monitor.x + monitor.w then
+          page = page + 1
+          xpos = monitor.x
+          ypos = monitor.y
+          maxh = 0
+          mmw = 0
+          maxw = d[3]
+          rc_p = rc_p + 1
+        end
+        
+        rc_sz[rc_p] = math.max(rc_sz[rc_p] or 0,d[3])
+        maxh = math.max(maxh,ypos + d[4] - monitor.y) 
+        mmw = math.max(mmw,xpos + maxw -monitor.x)
   
       elseif dir == 1 then
   
@@ -662,6 +754,7 @@
     
     pos[cnt] = {fxname = fxnm,
                 page = page,
+                rc = rc_p,
                  x = xpos, y = ypos,
                  w = d[3], h = d[4],
                  blacklist = blacklist}
@@ -672,11 +765,13 @@
       mh = pg[page].maxh
     end
     
-    pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos, mmh = mmh}
+    pg[page] = {maxw = math.max(mw, maxw), maxh = math.max(mh, maxh), yp = ypos, mmw = mmw, mmh = mmh}
     
     if blacklist == false then
       if dir == 0 then
         xpos = xpos + d[3]
+      elseif dir == 4 then
+        ypos = ypos + d[4]
       elseif dir == 1 then
         xpos = xpos + d[3]
       elseif dir == 2 then
@@ -709,6 +804,11 @@
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
     if pos then
+
+      if page > pos[#pos].page then
+        page = pos[#pos].page 
+      end
+    
       for p = 1, #pos do
       
         if pos[p].page == page and pos[p].blacklist ~= true then
@@ -868,6 +968,30 @@
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
         
+      elseif MOUSE_click(obj.sections[8]) then
+        
+        align = align + 1
+        if align > #aligntable1-1 then
+          align = 0
+        end
+        reaper.SetExtState(SCRIPT,'align',align,true)
+        PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
+        update_gfx = true
+
+      elseif MOUSE_click_RB(obj.sections[8]) then
+        
+        align = align - 1
+        if align < 0 then
+          align = #aligntable1-1 
+        end
+        reaper.SetExtState(SCRIPT,'align',align,true)
+        PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
+        update_gfx = true
+
       elseif MOUSE_click(obj.sections[11]) then
       
         local y = math.floor((mouse.my-obj.sections[11].y) / txt_h)+1 + posoff
@@ -886,6 +1010,11 @@
               fxblacklist[pos[y].fxname] = true
             end
             update_gfx = true
+            
+            PositionFXForTrack_Auto()
+            OpenFX(tpage)
+            
+            SaveBlacklist()
           end
         end
       
@@ -1029,6 +1158,7 @@
       reaper.SetExtState(SCRIPT,'mon_w',nz(monitor.w,1920),true) 
       reaper.SetExtState(SCRIPT,'mon_h',nz(monitor.h,1080),true)       
       reaper.SetExtState(SCRIPT,'dir',dir,true)       
+      reaper.SetExtState(SCRIPT,'align',align,true)       
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
     end
   
@@ -1060,6 +1190,7 @@
                w = nz(tonumber(mw),1920),
                h = nz(tonumber(mh),1080)}
     dir = nz(tonumber(GES('dir',true)),0)
+    align = nz(tonumber(GES('align',true)),0)
     settings.followtrack = tobool(GES('settings_followtrack',true))
 
     LoadBlacklist()
@@ -1108,6 +1239,10 @@
       return false
     end
   end
+  
+  function preventUndo()
+  end
+  reaper.defer(preventUndo)
   
   ------------------------------------------------------------
   reaper.RecursiveCreateDirectory(resource_path,1)
