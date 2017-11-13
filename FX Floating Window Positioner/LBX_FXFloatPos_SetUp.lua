@@ -678,7 +678,7 @@
           xpos = monitor.x
           ypos = monitor.y
           maxw = 0
-          mmw = 0
+          mmh = 0
           maxh = d[4]
           rc_p = rc_p + 1
         end
