@@ -17,7 +17,7 @@
   local SCRIPT='LBX_FXPOS'
   
   local resource_path = reaper.GetResourcePath().."/Scripts/LBX/FXPositionerData/"
-  local template_path = resource_path.."templates/"
+ 
   local dirtable = {'FIT','HORIZ','VERT','SINGLE','COLUMNS'}
   local aligntable1 = {'LEFT','CENTRE','RIGHT'}
   local aligntable2 = {'TOP','CENTRE','BOTTOM'}
@@ -304,11 +304,11 @@
           if pos[ii].page == tpage then
             tcol = '0 0 0'
             local bcol = '255 220 128'
-            if fxblacklist[pos[ii].fxname] then
-              bcol = '196 156 64'
+            if not fxblacklist[pos[ii].fxname] then
+              --bcol = '196 156 64'
+              f_Get_SSV(bcol) 
+              gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
             end
-            f_Get_SSV(bcol) 
-            gfx.rect(xywh.x-3,xywh.y,xywh.w+6,xywh.h,1)
           end
           if fxblacklist[pos[ii].fxname] then
             tcol = '80 80 80'
@@ -998,11 +998,13 @@
         if pos and pos[y] then
         
           if mouse.ctrl ~= true then
-            tpage = pos[y].page
-            OpenFX(tpage)
-            
-            reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-            update_gfx = true
+            if not fxblacklist[pos[y].fxname] then
+              tpage = pos[y].page
+              OpenFX(tpage)
+              
+              reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+              update_gfx = true
+            end
           else
             if fxblacklist[pos[y].fxname] == true then
               fxblacklist[pos[y].fxname] = nil
