@@ -601,7 +601,7 @@
         pos[pp].y = monitor.y + math.floor(((monitor.h)/2) - (pos[pp].h/2))
       end
           
-      local posstr = pos[pp].page ..' '.. pos[pp].x ..' '.. pos[pp].y ..' '.. pos[pp].w ..' '.. pos[pp].h
+      local posstr = pos[pp].page ..' '.. BoolToNum(pos[pp].blacklist) ..' '.. pos[pp].x ..' '.. pos[pp].y ..' '.. pos[pp].w ..' '.. pos[pp].h
       reaper.SetExtState(SCRIPT,'fx_posdata_'..pp,posstr,false)
     end
     
@@ -616,6 +616,14 @@
     
     reaper.Undo_EndBlock2(0, 'Show Plugins', 0)
     --OpenFX(tpage)
+  end
+
+  function BoolToNum(x)
+    if x == true then
+      return 1
+    else
+      return 0
+    end
   end
 
   function CloseFX(cfx, tr)
@@ -1218,7 +1226,6 @@
     local fxblacklist = fxblacklist
     local fn = resource_path..'fxblacklist.txt'
     if reaper.file_exists(fn) == true then
-      lines = {}
       for line in io.lines(fn) do
         local key = line --string.match(line,'(.-)\n')
         if key then

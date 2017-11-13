@@ -26,6 +26,13 @@
     if val == '' or val == nil then return d else return val end
   end
   
+  function NumToBool(x)
+    if x == 1 then
+      return true
+    else
+      return false
+    end
+  end
   
   function OpenFX(page)
 
@@ -37,8 +44,9 @@
     for p = 1, poscnt do
     
       local posstr = GES('fx_posdata_'..p)
-      pos[p] = {page = tonumber(string.match(posstr,'%d+'))}
-    
+      local pp, bl = string.match(posstr,'(%d+) (%d+)')
+      pos[p] = {page = tonumber(pp),
+                blacklist = NumToBool(tonumber(bl))}
     end
     page = math.min(page, pos[poscnt].page)   
    
@@ -47,7 +55,7 @@
     if pos then
       for p = 1, #pos do
       
-        if pos[p].page == page then
+        if pos[p].page == page and pos[p].blacklist ~= true then
           reaper.TrackFX_Show(tr,p-1,3)
         else
           reaper.TrackFX_Show(tr,p-1,2)

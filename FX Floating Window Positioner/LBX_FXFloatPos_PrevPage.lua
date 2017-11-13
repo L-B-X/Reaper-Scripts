@@ -21,8 +21,16 @@
     if val == '' or val == nil then return d else return val end
   end
     
-  function OpenFX(page)
+  function NumToBool(x)
+    if x == 1 then
+      return true
+    else
+      return false
+    end
+  end
   
+  function OpenFX(page)
+
     local pos = {}
     local poscnt = tonumber(GES('fx_posdata_cnt',true))
    
@@ -31,15 +39,18 @@
     for p = 1, poscnt do
     
       local posstr = GES('fx_posdata_'..p)
-      pos[p] = {page = tonumber(string.match(posstr,'%d+'))}
+      local pp, bl = string.match(posstr,'(%d+) (%d+)')
+      pos[p] = {page = tonumber(pp),
+                blacklist = NumToBool(tonumber(bl))}
     end
+    page = math.min(page, pos[poscnt].page)   
    
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
     if pos then
       for p = 1, #pos do
       
-        if pos[p].page == page then
+        if pos[p].page == page and pos[p].blacklist ~= true then
           reaper.TrackFX_Show(tr,p-1,3)
         else
           reaper.TrackFX_Show(tr,p-1,2)
@@ -47,8 +58,10 @@
        
       end
     end 
+    
+    return page
   end
-  
+    
   local mx, my = GES('mon_x',true), GES('mon_y',true)
   local mw, mh = GES('mon_w',true), GES('mon_h',true)
   monitor = {x = nz(tonumber(mx),0),
