@@ -1,16 +1,9 @@
--- @version 0.01 
--- @author LBX
+-- @version 1.0
+-- @author Leon Bradley (LBX)
+-- @description LBX FX Float Positioner - SetUp
+-- @website https://forum.cockos.com/showthread.php?t=199400
 -- @changelog
-
---[[
-   * ReaScript Name: LBX FX Float Positioner
-   * Lua script for Cockos REAPER
-   * Author: Leon Bradley (LBX)
-   * Author URI: 
-   * Licence: GPL v3
-  ]]
-   
-   
+--    1. Initial stable version
       
   local monitor = {x = 0, y = 0, w = 1920, h = 1080}
   

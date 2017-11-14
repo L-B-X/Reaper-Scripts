@@ -1,3 +1,10 @@
+-- @version 1.0
+-- @author Leon Bradley (LBX)
+-- @description LBX FX Float Positioner - Prev Page
+-- @website https://forum.cockos.com/showthread.php?t=199400
+-- @changelog
+--    1. Initial stable version
+
   local SCRIPT='LBX_FXPOS'
   
   function GES(key, nilallowed)

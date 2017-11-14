@@ -1,3 +1,10 @@
+-- @version 1.0
+-- @author Leon Bradley (LBX)
+-- @description LBX FX Float Positioner - Open
+-- @website https://forum.cockos.com/showthread.php?t=199400
+-- @changelog
+--    1. Initial stable version
+
   local SCRIPT='LBX_FXPOS'
   local resource_path = reaper.GetResourcePath().."/Scripts/LBX/FXPositionerData/"
   
