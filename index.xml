@@ -1,2 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <index version="1" name="LBX Scripts"/>
+  <category name="FX">
+    <reapack name="LBX_FXFloatPos_SetUp.lua" type="script" desc="Organise floating plugin windows on screen">
+      <version name="1.0" author="Leon Bradley (LBX)" time="2017-11-14T20:02:19Z">
+        <source main="main">https://github.com/L-B-X/Reaper-Scripts/raw/master/FX%20Floating%20Window%20Positioner/LBX_FXFloatPos_SetUp.lua</source>
+      </version>
+    </reapack>
+  </category>
+</index>
