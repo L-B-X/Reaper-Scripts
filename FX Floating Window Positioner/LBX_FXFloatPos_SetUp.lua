@@ -804,7 +804,7 @@
     
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
-    if pos then
+    if pos and #pos > 0 then
 
       if page > pos[#pos].page then
         page = pos[#pos].page 
