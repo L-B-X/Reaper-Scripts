@@ -41,7 +41,7 @@
     local pos = {}
     local poscnt = tonumber(GES('fx_posdata_cnt',true))
    
-    if not poscnt then return end
+    if not poscnt or poscnt == 0 then return end
     
     for p = 1, poscnt do
     
