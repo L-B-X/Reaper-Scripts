@@ -37,6 +37,7 @@
   local settings = {}
   settings.followtrack = false
   settings.looppages = false
+  settings.floatontrackchange = false
   
   --------------------------------------------
   --------------------------------------------
@@ -882,6 +883,10 @@
           
           tpage = -1
           PositionFXForTrack_Auto()
+          if settings.floatontrackchange == true then
+            tpage = 0
+            OpenFX(tpage)
+          end
           reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
           update_gfx = true
           
@@ -1114,6 +1119,11 @@
     end
     txt = txt .. 'Follow Selected Track'
     local tk = ''
+    if settings.floatontrackchange == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Float FX On Track Change'
+    local tk = ''
     if settings.looppages == true then
       tk = '!'
     end
@@ -1127,6 +1137,9 @@
       if res == 1 then
         settings.followtrack = not settings.followtrack 
       elseif res == 2 then
+        settings.floatontrackchange = not settings.floatontrackchange
+        SaveSettings()
+      elseif res == 3 then
         settings.looppages = not settings.looppages
         SaveSettings()
       end
@@ -1193,6 +1206,7 @@
       reaper.SetExtState(SCRIPT,'align',align,true)       
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
       reaper.SetExtState(SCRIPT,'settings_looppages',tostring(settings.looppages),true)
+      reaper.SetExtState(SCRIPT,'settings_floatontrackchange',tostring(settings.floatontrackchange),true)
     end
   
     SaveBlacklist()
@@ -1226,7 +1240,8 @@
     align = nz(tonumber(GES('align',true)),0)
     settings.followtrack = tobool(GES('settings_followtrack',true))
     settings.looppages = tobool(nz(GES('settings_looppages',true),false))
-
+    settings.floatontrackchange = tobool(nz(GES('settings_floatontrackchange',true),false))
+    
     LoadBlacklist()
 
   end
