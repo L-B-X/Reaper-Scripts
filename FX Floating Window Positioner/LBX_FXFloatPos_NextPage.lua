@@ -7,6 +7,19 @@
 
   local SCRIPT='LBX_FXPOS'
   
+  function tobool(v)
+   
+    if v then
+      if string.lower(v) == 'true' then
+        return true
+      else
+        return false
+      end
+    else
+      return false
+    end
+  end
+  
   function GES(key, nilallowed)
     if nilallowed == nil then nilallowed = false end
     
@@ -55,8 +68,13 @@
       pos[p] = {page = tonumber(pp),
                 blacklist = NumToBool(tonumber(bl))}
     end
-    page = math.min(page, pos[poscnt].page)   
-   
+    if looppages == false then
+      page = math.min(page, pos[poscnt].page)   
+    else
+      if page > pos[poscnt].page then
+        page = 0
+      end
+    end
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
     if pos then
@@ -82,6 +100,7 @@
              w = nz(tonumber(mw),1920),
              h = nz(tonumber(mh),1080)}
   tpage = tonumber(GES('tpage',true)) or 0
+  looppages = tobool(GES('settings_looppages',true))
   tpage=tpage+1
   
   --PositionFXForTrack_Auto()

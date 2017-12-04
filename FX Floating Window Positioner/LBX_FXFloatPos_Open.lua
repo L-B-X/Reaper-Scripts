@@ -317,7 +317,7 @@
     
         maxh = math.max(maxh, d[4])
     
-        if ypos + maxh > monitor.y + monitor.h then
+        if ypos + maxh > monitor.y + monitor.h and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -332,7 +332,7 @@
         mmh = math.max(mmh,ypos + maxh -monitor.y)
 
       elseif dir == 4 then
-        if ypos + d[4] > monitor.y + monitor.h then
+        if ypos + d[4] > monitor.y + monitor.h and cnt > 1 then
           ypos = monitor.y
           xpos = xpos + maxw
           maxw = 0
@@ -341,7 +341,7 @@
     
         maxw = math.max(maxw, d[3])
     
-        if xpos + maxw > monitor.x + monitor.w then
+        if xpos + maxw > monitor.x + monitor.w and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -358,7 +358,7 @@
       elseif dir == 1 then
   
         maxh = math.max(maxh, d[4])
-        if xpos + d[3] > monitor.x + monitor.w then
+        if xpos + d[3] > monitor.x + monitor.w and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -370,7 +370,7 @@
       elseif dir == 2 then
       
         maxw = math.max(maxw, d[3])
-        if ypos + d[4] > monitor.y + monitor.h then
+        if ypos + d[4] > monitor.y + monitor.h and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -468,21 +468,34 @@
     
   end
     
-    function LoadBlacklist()
-    
-      local fxblacklist = fxblacklist
-      local fn = resource_path..'fxblacklist.txt'
-      if reaper.file_exists(fn) == true then
-        for line in io.lines(fn) do
-          local key = line --string.match(line,'(.-)\n')
-          if key then
-            fxblacklist[key] = true
-          end
+  function LoadBlacklist()
+  
+    local fxblacklist = fxblacklist
+    local fn = resource_path..'fxblacklist.txt'
+    if reaper.file_exists(fn) == true then
+      for line in io.lines(fn) do
+        local key = line --string.match(line,'(.-)\n')
+        if key then
+          fxblacklist[key] = true
         end
       end
-    
     end
-    
+  
+  end
+  
+  function tobool(v)
+   
+    if v then
+      if string.lower(v) == 'true' then
+        return true
+      else
+        return false
+      end
+    else
+      return false
+    end
+  end
+     
   local mx, my = GES('mon_x',true), GES('mon_y',true)
   local mw, mh = GES('mon_w',true), GES('mon_h',true)
   monitor = {x = nz(tonumber(mx),0),
@@ -492,6 +505,7 @@
   tpage = 0
   dir = tonumber(GES('dir',true)) or 0
   align = tonumber(GES('align',true)) or 0
+  --looppages = tobool(GES('settings_looppages',true))
   
   LoadBlacklist()
   

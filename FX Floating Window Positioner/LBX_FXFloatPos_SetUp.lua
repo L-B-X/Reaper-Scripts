@@ -36,6 +36,7 @@
   local tracknum
   local settings = {}
   settings.followtrack = false
+  settings.looppages = false
   
   --------------------------------------------
   --------------------------------------------
@@ -674,7 +675,7 @@
     
         maxh = math.max(maxh, d[4])
     
-        if ypos + maxh > monitor.y + monitor.h then
+        if ypos + maxh > monitor.y + monitor.h and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -698,7 +699,7 @@
     
         maxw = math.max(maxw, d[3])
     
-        if xpos + maxw > monitor.x + monitor.w then
+        if xpos + maxw > monitor.x + monitor.w and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -715,7 +716,7 @@
       elseif dir == 1 then
   
         maxh = math.max(maxh, d[4])
-        if xpos + d[3] > monitor.x + monitor.w then
+        if xpos + d[3] > monitor.x + monitor.w and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -727,7 +728,7 @@
       elseif dir == 2 then
       
         maxw = math.max(maxw, d[3])
-        if ypos + d[4] > monitor.y + monitor.h then
+        if ypos + d[4] > monitor.y + monitor.h and cnt > 1 then
           page = page + 1
           xpos = monitor.x
           ypos = monitor.y
@@ -914,7 +915,18 @@
       
       elseif MOUSE_click(obj.sections[2]) then
       
-        tpage = math.max(tpage - 1,0)
+        if settings.looppages == false then
+          tpage = math.max(tpage - 1,0)
+        else
+
+          local pgcnt = 0
+          if pg then pgcnt = #pg end
+
+          tpage = tpage - 1
+          if tpage < 0 then
+            tpage = pgcnt
+          end 
+        end
         --PositionFXForTrack_Auto()   
         OpenFX(tpage)     
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
@@ -925,7 +937,16 @@
         local pgcnt = 0
         if pg then pgcnt = #pg end
         
-        tpage = math.min(tpage + 1,pgcnt)
+        if settings.looppages == false then
+          tpage = math.min(tpage + 1,pgcnt)
+        else
+
+          tpage = tpage + 1
+          if tpage > pgcnt then
+            tpage = 0
+          end 
+        end
+  
         OpenFX(tpage)        
         reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
         update_gfx = true
@@ -1092,6 +1113,11 @@
       txt = '!'
     end
     txt = txt .. 'Follow Selected Track'
+    local tk = ''
+    if settings.looppages == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Loop pages'
     
     local mstr = txt
     gfx.x,gfx.y = mouse.mx,mouse.my
@@ -1100,6 +1126,9 @@
     if res > 0 then
       if res == 1 then
         settings.followtrack = not settings.followtrack 
+      elseif res == 2 then
+        settings.looppages = not settings.looppages
+        SaveSettings()
       end
     end
   
@@ -1163,6 +1192,7 @@
       reaper.SetExtState(SCRIPT,'dir',dir,true)       
       reaper.SetExtState(SCRIPT,'align',align,true)       
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
+      reaper.SetExtState(SCRIPT,'settings_looppages',tostring(settings.looppages),true)
     end
   
     SaveBlacklist()
@@ -1195,6 +1225,7 @@
     dir = nz(tonumber(GES('dir',true)),0)
     align = nz(tonumber(GES('align',true)),0)
     settings.followtrack = tobool(GES('settings_followtrack',true))
+    settings.looppages = tobool(nz(GES('settings_looppages',true),false))
 
     LoadBlacklist()
 

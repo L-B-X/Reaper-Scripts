@@ -7,6 +7,19 @@
 
   local SCRIPT='LBX_FXPOS'
   
+  function tobool(v)
+     
+    if v then
+      if string.lower(v) == 'true' then
+        return true
+      else
+        return false
+      end
+    else
+      return false
+    end
+  end
+  
   function GES(key, nilallowed)
     if nilallowed == nil then nilallowed = false end
     
@@ -50,7 +63,14 @@
       pos[p] = {page = tonumber(pp),
                 blacklist = NumToBool(tonumber(bl))}
     end
-    page = math.min(page, pos[poscnt].page)   
+    page = math.min(page, pos[poscnt].page)
+    if looppages == false then
+      page = math.max(math.min(page, pos[poscnt].page),0)   
+    else
+      if page < 0 then
+        page = pos[poscnt].page
+      end
+    end   
    
     local tr = reaper.GetSelectedTrack2(0,0,true)       
     if not tr then return end
@@ -76,10 +96,11 @@
              w = nz(tonumber(mw),1920),
              h = nz(tonumber(mh),1080)}
   tpage = tonumber(GES('tpage',true)) or 0
-  tpage=math.max(tpage-1,0)
+  looppages = tobool(GES('settings_looppages',true))
+  tpage=tpage-1
   
   --PositionFXForTrack_Auto()
-  OpenFX(tpage)
+  tpage = OpenFX(tpage)
   reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
 
   reaper.Main_OnCommand(reaper.NamedCommandLookup('_BR_FOCUS_ARRANGE_WND'),0)
