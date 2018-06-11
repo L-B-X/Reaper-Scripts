@@ -600,7 +600,7 @@
           yoff = math.floor(((monitor.h)/2) - (pos[pp].h/2))
         elseif align == 2 then
           if boundary == 1 then
-            yoff = monitor.y+monitor.h - pos[pp].h
+            yoff = monitor.h - pos[pp].h
           else
             yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)          
           end
@@ -618,7 +618,7 @@
           xoff = math.floor(((monitor.w)/2) - (pos[pp].w/2))
         elseif align == 2 then
           if boundary == 1 then
-            xoff = monitor.x+monitor.w - pos[pp].w
+            xoff = monitor.w - pos[pp].w
           else
             xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
           end
