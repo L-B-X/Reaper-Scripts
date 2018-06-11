@@ -1466,7 +1466,6 @@
     settings.monitortrackfx = tobool(nz(GES('settings_monitortrackfx',true),false))
     settings.autopositionnewfx = tobool(nz(GES('settings_autopositionnewfx',true),false))
     settings.focarr = tobool(nz(GES('settings_focarr',true),true))
-
     LoadBlacklist()
 
   end
@@ -1589,7 +1588,7 @@
   function tobool(v)
   
     if v then
-      if string.lower(v) == 'true' then
+      if string.lower(tostring(v)) == 'true' then
         return true
       else
         return false
