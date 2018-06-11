@@ -1541,7 +1541,7 @@
       
       if ldir and lalign and lmonx and lmony and lmonw and lmonh then
         dir = ldir
-        align = align
+        align = lalign
         monitor.x = lmonx
         monitor.y = lmony
         monitor.w = lmonw
