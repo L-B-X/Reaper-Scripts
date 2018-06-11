@@ -22,6 +22,7 @@
   local resize_display = true
   
   local tpage = 0
+  local trackfxcount = -1
   local mouse = {}
 
   local nextupdate = 0
@@ -38,6 +39,9 @@
   settings.followtrack = false
   settings.looppages = false
   settings.floatontrackchange = false
+  settings.monitortrackfx = false
+  settings.autopositionnewfx = false
+  settings.focarr = true
   
   --------------------------------------------
   --------------------------------------------
@@ -459,6 +463,7 @@
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     local fxc = reaper.TrackFX_GetCount(tr)
+    trackfxcount = fxc
      
     local chunk = GetTrackChunk(tr)
     
@@ -892,6 +897,32 @@
           
         end
       end
+      
+      if settings.monitortrackfx == true then
+        local tr = reaper.GetSelectedTrack2(0,0,true)
+        if tr then
+          local fxc = reaper.TrackFX_GetCount(tr)
+          if fxc ~= trackfxcount then
+            tpage = -1
+            local otfxc = trackfxcount    
+            PositionFXForTrack_Auto()
+            
+            if settings.autopositionnewfx == true and fxc > otfxc then
+              --HideFX()
+              reaper.TrackFX_Show(tr,fxc-1,2)
+              local pcnt = 0
+              if pg then pcnt = #pg end
+              tpage = pcnt
+              OpenFX(tpage)              
+            end
+            
+            reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+            trackfxcount = fxc
+            update_gfx = true
+          end
+        end
+      end
+      
       nextupdate = reaper.time_precise() + 0.3
     end
     
@@ -1128,6 +1159,21 @@
       tk = '!'
     end
     txt = txt..'|'..tk .. 'Loop pages'
+    local tk = ''
+    if settings.monitortrackfx == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Auto monitor track fx changes'
+    local tk = ''
+    if settings.autopositionnewfx == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Auto position new fx'
+    local tk = ''
+    if settings.focarr == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Auto focus arrange window after positioning'
     
     local mstr = txt
     gfx.x,gfx.y = mouse.mx,mouse.my
@@ -1141,6 +1187,21 @@
         SaveSettings()
       elseif res == 3 then
         settings.looppages = not settings.looppages
+        SaveSettings()
+      elseif res == 4 then
+        settings.monitortrackfx = not settings.monitortrackfx
+        if settings.monitortrackfx == false then
+          settings.autopositionnewfx = false
+        end
+        SaveSettings()
+      elseif res == 5 then
+        settings.autopositionnewfx = not settings.autopositionnewfx
+        if settings.autopositionnewfx == true then
+          settings.monitortrackfx = true
+        end
+        SaveSettings()
+      elseif res == 6 then
+        settings.focarr = not settings.focarr
         SaveSettings()
       end
     end
@@ -1207,6 +1268,11 @@
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
       reaper.SetExtState(SCRIPT,'settings_looppages',tostring(settings.looppages),true)
       reaper.SetExtState(SCRIPT,'settings_floatontrackchange',tostring(settings.floatontrackchange),true)
+
+      reaper.SetExtState(SCRIPT,'settings_monitortrackfx',tostring(settings.monitortrackfx),true)
+      reaper.SetExtState(SCRIPT,'settings_autopositionnewfx',tostring(settings.autopositionnewfx),true)
+
+      reaper.SetExtState(SCRIPT,'settings_focarr',tostring(settings.focarr),true)
     end
   
     SaveBlacklist()
@@ -1238,10 +1304,14 @@
                h = nz(tonumber(mh),1080)}
     dir = nz(tonumber(GES('dir',true)),0)
     align = nz(tonumber(GES('align',true)),0)
+    
     settings.followtrack = tobool(GES('settings_followtrack',true))
     settings.looppages = tobool(nz(GES('settings_looppages',true),false))
     settings.floatontrackchange = tobool(nz(GES('settings_floatontrackchange',true),false))
-    
+    settings.monitortrackfx = tobool(nz(GES('settings_monitortrackfx',true),false))
+    settings.autopositionnewfx = tobool(nz(GES('settings_autopositionnewfx',true),false))
+    settings.focarr = tobool(nz(GES('settings_focarr',true),true))
+
     LoadBlacklist()
 
   end

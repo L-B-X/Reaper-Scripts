@@ -91,6 +91,7 @@
     
   local mx, my = GES('mon_x',true), GES('mon_y',true)
   local mw, mh = GES('mon_w',true), GES('mon_h',true)
+  local focarr = tobool(nz(GES('settings_focarr',true),true))
   monitor = {x = nz(tonumber(mx),0),
              y = nz(tonumber(my),0),
              w = nz(tonumber(mw),1920),
@@ -103,4 +104,6 @@
   tpage = OpenFX(tpage)
   reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
 
-  reaper.Main_OnCommand(reaper.NamedCommandLookup('_BR_FOCUS_ARRANGE_WND'),0)
+  if focarr == true then
+    reaper.Main_OnCommand(reaper.NamedCommandLookup('_BR_FOCUS_ARRANGE_WND'),0)
+  end
