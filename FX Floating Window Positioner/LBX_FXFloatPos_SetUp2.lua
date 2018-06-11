@@ -1157,6 +1157,7 @@
         elseif MOUSE_click(obj.sections[13]) then
         
           SetUp2()
+          update_gfx = true
           
         elseif MOUSE_click(obj.sections[7]) then
                   
