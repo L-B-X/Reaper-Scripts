@@ -189,21 +189,37 @@
       
         pos[pp].x = pos[pp].x + xoff
         if align == 0 then
-          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2))
+          if boundary == 1 then
+            yoff = 0
+          else
+            yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2))
+          end
         elseif align == 1 then
           yoff = math.floor(((monitor.h)/2) - (pos[pp].h/2))
         elseif align == 2 then
-          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)
+          if boundary == 1 then
+            yoff = monitor.y+monitor.h - pos[pp].h
+          else
+            yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)          
+          end
         end
         pos[pp].y = monitor.y + yoff
         
       elseif dir == 2 then
         if align == 0 then
-          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2))
+          if boundary == 1 then
+            xoff = 0
+          else
+            xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2))
+          end
         elseif align == 1 then
           xoff = math.floor(((monitor.w)/2) - (pos[pp].w/2))
         elseif align == 2 then
-          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
+          if boundary == 1 then
+            xoff = monitor.x+monitor.w - pos[pp].w
+          else
+            xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
+          end
         end
         pos[pp].x = monitor.x + xoff
         pos[pp].y = pos[pp].y + yoff
@@ -506,6 +522,8 @@
   tpage = 0
   dir = tonumber(GES('dir',true)) or 0
   align = tonumber(GES('align',true)) or 0
+  boundary = nz(tonumber(GES('boundary',true)),0)
+  
   --looppages = tobool(GES('settings_looppages',true))
   
   LoadBlacklist()

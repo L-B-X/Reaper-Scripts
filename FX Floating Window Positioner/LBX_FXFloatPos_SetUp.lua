@@ -34,6 +34,7 @@
   
   local dir = 0
   local align = 0
+  local boundary = 0
   local tracknum
   local settings = {}
   settings.followtrack = false
@@ -109,9 +110,13 @@
                        y = 10 + (butt_h+2)*1,
                        w = gfx1.main_w-20,
                        h = butt_h}       
-    obj.sections[8] = {x = 10,
+   obj.sections[8] = {x = 10,
                        y = 10 + (butt_h+2)*2,
-                       w = gfx1.main_w-20,
+                       w = gfx1.main_w/2-11,
+                       h = butt_h}       
+    obj.sections[16] = {x = gfx1.main_w/2+1,
+                       y = 10 + (butt_h+2)*2,
+                       w = gfx1.main_w/2-11,
                        h = butt_h}       
 
     obj.sections[10] = {x = 10,
@@ -251,6 +256,15 @@
     end
         
     GUI_DrawButton(gui, obj.sections[8], alt, c, '99 99 99', true, -4)
+    local d = c
+    local dtc = '99 99 99'
+    if boundary == 0 then
+      d = '0 0 0'
+      dtc = '200 200 200'    
+    end
+    GUI_DrawButton(gui, obj.sections[16], 'ALIGN BOUNDARY', d, dtc, true, -4)
+    
+    
     if pg and pg[tpage] then
       GUI_text(gui, obj.sections[4], tpage+1 ..'/'..#pg+1, 5, tcol, -4)
     end
@@ -577,21 +591,37 @@
       
         pos[pp].x = pos[pp].x + xoff
         if align == 0 then
-          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2))
+          if boundary == 1 then
+            yoff = 0
+          else
+            yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2))
+          end
         elseif align == 1 then
           yoff = math.floor(((monitor.h)/2) - (pos[pp].h/2))
         elseif align == 2 then
-          yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)
+          if boundary == 1 then
+            yoff = monitor.y+monitor.h - pos[pp].h
+          else
+            yoff = math.floor(((monitor.h)/2) - (pg[pos[pp].page].maxh/2)) + (pg[pos[pp].page].maxh - pos[pp].h)          
+          end
         end
         pos[pp].y = monitor.y + yoff
         
       elseif dir == 2 then
         if align == 0 then
-          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2))
+          if boundary == 1 then
+            xoff = 0
+          else
+            xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2))
+          end
         elseif align == 1 then
           xoff = math.floor(((monitor.w)/2) - (pos[pp].w/2))
         elseif align == 2 then
-          xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
+          if boundary == 1 then
+            xoff = monitor.x+monitor.w - pos[pp].w
+          else
+            xoff = math.floor(((monitor.w)/2) - (pg[pos[pp].page].maxw/2)) + (pg[pos[pp].page].maxw - pos[pp].w)
+          end
         end
         pos[pp].x = monitor.x + xoff
         pos[pp].y = pos[pp].y + yoff
@@ -1038,6 +1068,15 @@
         
         update_gfx = true
 
+      elseif MOUSE_click(obj.sections[16]) then
+
+        boundary = 1-boundary
+        reaper.SetExtState(SCRIPT,'boundary',boundary,true)
+        PositionFXForTrack_Auto()
+        OpenFX(tpage)
+        
+        update_gfx = true
+
       elseif MOUSE_click_RB(obj.sections[8]) then
         
         align = align - 1
@@ -1264,7 +1303,9 @@
       reaper.SetExtState(SCRIPT,'mon_w',nz(monitor.w,1920),true) 
       reaper.SetExtState(SCRIPT,'mon_h',nz(monitor.h,1080),true)       
       reaper.SetExtState(SCRIPT,'dir',dir,true)       
-      reaper.SetExtState(SCRIPT,'align',align,true)       
+      reaper.SetExtState(SCRIPT,'align',align,true)  
+      reaper.SetExtState(SCRIPT,'boundary',boundary,true)       
+           
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
       reaper.SetExtState(SCRIPT,'settings_looppages',tostring(settings.looppages),true)
       reaper.SetExtState(SCRIPT,'settings_floatontrackchange',tostring(settings.floatontrackchange),true)
@@ -1304,6 +1345,7 @@
                h = nz(tonumber(mh),1080)}
     dir = nz(tonumber(GES('dir',true)),0)
     align = nz(tonumber(GES('align',true)),0)
+    boundary = nz(tonumber(GES('boundary',true)),0)
     
     settings.followtrack = tobool(GES('settings_followtrack',true))
     settings.looppages = tobool(nz(GES('settings_looppages',true),false))
