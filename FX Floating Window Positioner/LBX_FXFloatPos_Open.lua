@@ -486,7 +486,7 @@
   function tobool(v)
    
     if v then
-      if string.lower(v) == 'true' then
+      if string.lower(tostring(v)) == 'true' then
         return true
       else
         return false
