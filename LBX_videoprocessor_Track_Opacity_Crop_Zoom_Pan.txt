@@ -1,0 +1,58 @@
+// Track opacity/crop/zoom/pan
+//@param1:opacity 'opacity' 1
+//@param2:zoom 'zoom' 0 -10 10 0
+//@param3:xoffs 'X offset' 0 -1 1 0
+//@param4:yoffs 'Y offset' 0 -1 1 0
+//@param5:rotate 'rotate' 0 -360 360 0 1
+
+//@param6:cropl 'crop left' 0 0 1 0.5
+//@param7:cropr 'crop right' 0 0 1 0.5
+
+//@param8:cropt 'crop top' 0 0 1 0.5
+//@param9:cropb 'crop bottom' 0 0 1 0.5
+
+//@param11:filter 'filter' 0 0 1 0.5 1
+//@param12:clear 'clear bg' 1 0 1 0.5 1
+//@param13:paspect 'preserve aspect' 1 0 1 0.5 1
+
+(bg_img=input_ismaster() ? -2 : input_track(0)) ? (
+  //force_w &= -2; force_h &= -2;
+  //force_w && !force_h ? force_h = (force_w * project_h / project_w)&-2;
+  //force_h && !force_w ? force_w = (force_h * project_w / project_h)&-2;
+  //force_w>0 && force_h>0 ? ( project_w=force_w; project_h=force_h );
+  w = opacity < 0.01 ? 0 : opacity > 0.99 ? 1 : opacity;
+  gfx_a2=0;
+  gfx_blit((w < 1 || clear < 0.5) ? bg_img : -2,1);
+
+  w > 0 ? (
+    gfx_mode = filter>0.5 ? 256 : 0;
+    gfx_a=w;
+    z = 10^(zoom/10);
+
+    cl = floor(cropl * project_w);
+    cr = floor(cropr * project_w);
+    ct = floor(cropt * project_w);
+    cb = floor(cropb * project_w);
+
+    dw = ((project_w-cl-cr)*z)&-2;
+    dh = ((project_h-ct-cb)*z)&-2;
+    
+    x = (project_w - dw + xoffs*(project_w+dw))*.5;
+    x+=cl*.5*z;
+    x-=cr*.5*z;
+    
+    y = (project_h - dh + yoffs*(project_h+dh))*.5;
+    y+=ct*.5*z;
+    y-=cb*.5*z;
+    
+    nw = ceil(project_w-cl-cr);
+    nh = ceil(project_h-ct-cb);
+    
+    gfx_blit(0,paspect, x|0,y|0,dw,dh,cl,ct,nw,nh)
+    //rotate == 0 ? gfx_blit(0,paspect, x|0,y|0,dw,dh) : (
+    //  input_info(0,srcw,srch);
+    //  sc=2.0; sc2=sc*.5 - 0.5;
+    //  gfx_rotoblit(0,rotate*$pi/180,(x-dw*sc2)|0,(y-dh*sc2)|0,dw*sc,dh*sc, -srcw*sc2, -srch*sc2, srcw*sc, srch*sc);
+    //);
+  );
+);
