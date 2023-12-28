@@ -1213,6 +1213,12 @@
       tk = '!'
     end
     txt = txt..'|'..tk .. 'Auto focus arrange window after positioning'
+    local d = gfx.dock(-1)
+    local ds = ''
+    if d&1 == 1 then
+      ds = '!'
+    end
+    txt=txt..'||'..ds..'Dock script window'
     
     local mstr = txt
     gfx.x,gfx.y = mouse.mx,mouse.my
@@ -1242,6 +1248,11 @@
       elseif res == 6 then
         settings.focarr = not settings.focarr
         SaveSettings()
+      elseif res == 7 then
+        local d = gfx.dock(-1)
+        local ds = d&1
+        local dp = d>>8
+        gfx.dock((dp<<8)+(1-ds))
       end
     end
   

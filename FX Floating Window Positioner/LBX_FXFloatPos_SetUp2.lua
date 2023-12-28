@@ -42,12 +42,14 @@
   local presets
   local currentpreset = ''
   
+  settings.followdelay = 0
   settings.followtrack = false
   settings.looppages = false
   settings.floatontrackchange = false
   settings.monitortrackfx = false
   settings.autopositionnewfx = false
   settings.focarr = true
+  settings.autohide = true
   
   local setup = false
   
@@ -553,19 +555,25 @@
   end
   
   function PositionFXForTrack_Auto()
-  
+
     reaper.Undo_BeginBlock2(0)
   
+
     local tr = reaper.GetSelectedTrack2(0,0,true)
     local mstr = '(FLOAT.- %-?%d+ %-?%d+ %-?%d+ %-?%d+\n)'   
     if not tr then return end
+
+    if settings.autohide then
+      --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
+      reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
+    end
     
-    reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
-    reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS6'),0)
     local fxc = reaper.TrackFX_GetCount(tr)
     trackfxcount = fxc
+
      
     local chunk = GetTrackChunk(tr)
+
     
     local chs, che
     chs, _ = string.find(chunk,'<FXCHAIN')
@@ -585,6 +593,7 @@
       if level == 0 then che = s break end
     until level == 0 
     
+    pos = nil
     if chs == nil or che == nil then return end
        
     local fchunk = string.sub(chunk,chs,che)
@@ -632,6 +641,7 @@
     local pchunk = string.gsub(fchunk,
                               mstr,
                               function(d) return Pass1(tr, d) end)
+    
     reaper.SetExtState(SCRIPT,'fx_posdata_cnt',#pos,false)
     for pp = 1, #pos do
     
@@ -999,47 +1009,67 @@
       
       if settings.followtrack == true then
         local tn = reaper.GetSelectedTrack2(0,0,true)
-        if tn ~= tracknum then
-          tracknum = tn
-          
-          tpage = -1
-          PositionFXForTrack_Auto()
-          if settings.floatontrackchange == true then
-            tpage = 0
-            OpenFX(tpage)
+        if tn then
+          local tnum = reaper.GetMediaTrackInfo_Value(tn, 'IP_TRACKNUMBER')
+          if (tnum ~= tracknum and trackchange == nil) or (trackchange and trackchange.tn ~= tnum) then
+  
+            trackchange = {tn = tnum, t = rt+settings.followdelay}
+            pos = nil
+            --HideFX()
+            update_gfx = true
+            
           end
-          reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-          update_gfx = true
-          
         end
       end
-      
+            
       if settings.monitortrackfx == true then
         local tr = reaper.GetSelectedTrack2(0,0,true)
         if tr then
-          local fxc = reaper.TrackFX_GetCount(tr)
-          if fxc ~= trackfxcount then
-            tpage = -1
-            local otfxc = trackfxcount    
-            PositionFXForTrack_Auto()
+          local tnum = reaper.GetMediaTrackInfo_Value(tr, 'IP_TRACKNUMBER')
+          if tnum == tracknum then
+            local fxc = reaper.TrackFX_GetCount(tr)
+            if fxc ~= trackfxcount then
             
-            if settings.autopositionnewfx == true and fxc > otfxc then
-              --HideFX()
-              reaper.TrackFX_Show(tr,fxc-1,2)
-              local pcnt = 0
-              if pg then pcnt = #pg end
-              tpage = pcnt
-              OpenFX(tpage)              
+              tpage = -1
+              local otfxc = trackfxcount    
+              PositionFXForTrack_Auto()
+              
+              if settings.autopositionnewfx == true and fxc > otfxc then
+                --HideFX()
+                reaper.TrackFX_Show(tr,fxc-1,2)
+                local pcnt = 0
+                if pg then pcnt = #pg end
+                tpage = pcnt
+                OpenFX(tpage)              
+              end
+              
+              reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+              trackfxcount = fxc
+              update_gfx = true
             end
-            
-            reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-            trackfxcount = fxc
-            update_gfx = true
           end
         end
       end
       
       nextupdate = reaper.time_precise() + 0.3
+    end
+    --if trackchange and rt >= trackchange.t then
+    --DBG(trackchange.t..'  '..trackchange.tn..'  '..rt)
+    --end
+    if trackchange and rt >= trackchange.t then
+
+      tracknum = trackchange.tn
+      
+      tpage = -1
+      PositionFXForTrack_Auto()
+      if settings.floatontrackchange == true then
+        tpage = 0
+        OpenFX(tpage)
+      end
+      reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
+      update_gfx = true
+      
+      trackchange = nil
     end
     
     if setup ~= true then
@@ -1291,7 +1321,7 @@
   
     tpage = -1
     reaper.SetExtState(SCRIPT,'tpage',nz(tpage,0),false)
-    reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
+    --reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS4'),0)
     reaper.Main_OnCommand(reaper.NamedCommandLookup('_S&M_WNCLS3'),0)
     update_gfx = true
     
@@ -1360,6 +1390,20 @@
       tk = '!'
     end
     txt = txt..'|'..tk .. 'Auto focus arrange window after positioning'
+    if settings.followdelay > 0 then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Delay position scan on track change ('..settings.followdelay..' secs)'
+    if settings.autohide == true then
+      tk = '!'
+    end
+    txt = txt..'|'..tk .. 'Autohide Open FX GUIs On Track Change'
+    local d = gfx.dock(-1)
+    local ds = ''
+    if d&1 == 1 then
+      ds = '!'
+    end
+    txt=txt..'||'..ds..'Dock script window'
     
     local mstr = txt
     gfx.x,gfx.y = mouse.mx,mouse.my
@@ -1389,6 +1433,20 @@
       elseif res == 6 then
         settings.focarr = not settings.focarr
         SaveSettings()
+      elseif res == 7 then
+        local ret, del = reaper.GetUserInputs('FX Positioner',1,'Delay (secs):', tostring(settings.followdelay))
+        if ret == true and tonumber(del) then
+          settings.followdelay = tonumber(del)
+        end
+        SaveSettings()
+      elseif res == 8 then
+        settings.autohide = not settings.autohide
+        SaveSettings()
+      elseif res == 9 then
+        local d = gfx.dock(-1)
+        local ds = d&1
+        local dp = d>>8
+        gfx.dock((dp<<8)+(1-ds))
       end
     end
   
@@ -1461,6 +1519,7 @@
       reaper.SetExtState(SCRIPT,'align',align,true)       
       reaper.SetExtState(SCRIPT,'boundary',boundary,true)       
       reaper.SetExtState(SCRIPT,'settings_followtrack',tostring(settings.followtrack),true)
+      reaper.SetExtState(SCRIPT,'settings_followdelay',tostring(settings.followdelay),true)
       reaper.SetExtState(SCRIPT,'settings_looppages',tostring(settings.looppages),true)
       reaper.SetExtState(SCRIPT,'settings_floatontrackchange',tostring(settings.floatontrackchange),true)
 
@@ -1468,6 +1527,7 @@
       reaper.SetExtState(SCRIPT,'settings_autopositionnewfx',tostring(settings.autopositionnewfx),true)
 
       reaper.SetExtState(SCRIPT,'settings_focarr',tostring(settings.focarr),true)
+      reaper.SetExtState(SCRIPT,'settings_autohide',tostring(settings.autohide),true)
     end
   
     SaveBlacklist()
@@ -1502,11 +1562,13 @@
     boundary = nz(tonumber(GES('boundary',true)),0)
     
     settings.followtrack = tobool(GES('settings_followtrack',true))
+    settings.followdelay = tonumber(GES('settings_followdelay',true)) or 0
     settings.looppages = tobool(nz(GES('settings_looppages',true),false))
     settings.floatontrackchange = tobool(nz(GES('settings_floatontrackchange',true),false))
     settings.monitortrackfx = tobool(nz(GES('settings_monitortrackfx',true),false))
     settings.autopositionnewfx = tobool(nz(GES('settings_autopositionnewfx',true),false))
     settings.focarr = tobool(nz(GES('settings_focarr',true),true))
+    settings.autohide = tobool(nz(GES('settings_autohide',true),true))
     LoadBlacklist()
 
   end
